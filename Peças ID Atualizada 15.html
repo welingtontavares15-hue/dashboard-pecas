@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🧰 Solicitação de Peças — Local/Global (Power Automate)</title>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<!-- XLSX -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--accent:#3b82f6;
+  --ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--border:#334155;--shadow:0 4px 20px rgba(0,0,0,.2)
+}
+:root.light{
+  --bg:#eef8f1; --card:#ffffff; --text:#111827; --muted:#475569; --accent:#2563eb;
+  --ok:#16a34a; --warn:#d97706; --danger:#b91c1c; --border:#cbd5e1; --shadow:0 2px 10px rgba(0,0,0,.08)
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{
+  background:var(--card);
+  background-image:linear-gradient(135deg, rgba(34,197,94,0.15), rgba(59,130,246,0.08));
+  border-bottom:1px solid var(--border);
+  padding:12px 20px;display:flex;gap:12px;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:10;box-shadow:var(--shadow)
+}
+:root:not(.light) header{ background-image:none; }
+h1{font-size:18px;margin:0}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.badge{border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--muted);font-size:12px;background:rgba(255,255,255,.04)}
+button{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer;transition:.2s}
+button:hover{background:var(--accent);color:#fff}
+.btn-ok{background:var(--ok);border:none;color:#fff}
+.btn-danger{background:var(--danger);border:none;color:#fff}
+main{max-width:1200px;margin:0 auto;padding:20px;display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(12,1fr)}
+.grid>label{grid-column:span 3;align-self:end;color:var(--muted);font-size:13px}
+.grid>input,.grid>textarea,.grid>select{grid-column:span 9}
+@media (max-width:900px){.grid{grid-template-columns:1fr}.grid>label,.grid>*{grid-column:auto}}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text)}
+input[readonly]{opacity:.9}
+table{width:100%;border-collapse:collapse}
+th,td{border-bottom:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:middle}
+th{position:sticky;top:60px;background:var(--card)}
+tr:hover{background:rgba(255,255,255,.04)}
+td input, td select{width:100%}
+.total-box{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;font-weight:600}
+.total-box input{width:120px;text-align:right}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;z-index:50}
+.toast.show{display:block}
+
+/* validação & auditoria */
+input.idmaq.invalid{border-color:var(--danger); box-shadow:0 0 0 3px rgba(239,68,68,.2)}
+tr.row-error{outline:2px solid var(--danger); background:rgba(239,68,68,.08)}
+.small-hint{color:var(--muted); font-size:12px; margin-top:6px}
+kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-size:12px}
+
+/* modal relatório */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:60}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);max-width:900px;width:96%;padding:16px}
+.modal h3{margin:0 0 10px 0}
+.modal .issues{max-height:50vh;overflow:auto;border:1px dashed var(--border);border-radius:10px;padding:10px;background:rgba(255,255,255,.02)}
+.modal .issue{padding:6px 8px;border-bottom:1px solid var(--border);font-size:14px}
+.modal .issue:last-child{border-bottom:none}
+.modal .muted{color:var(--muted);font-size:12px}
+.modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+/* === STATUS: cor só no SELECT === */
+select.status{width:auto;min-width:140px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
+select.status.status-and{background:var(--warn)}
+select.status.status-parc{background:var(--danger)}
+select.status.status-conc{background:var(--ok)}
+.row-status-and,.row-status-parc,.row-status-conc{background:transparent !important}
+
+/* filtros do histórico */
+.hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.hist-filtros input,.hist-filtros select{max-width:220px}
+.hist-empty{color:var(--muted); padding:10px 0}
+
+/* Ações do histórico alinhadas à direita (Excel/PDF lado a lado) */
+#tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end}
+.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text')}
+
+/* === AUTOCOMPLETE de Peças === */
+.suggest-wrap{position:relative}
+.suggest{
+  position:absolute; z-index:20; left:0; right:0; top:calc(100% + 4px);
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  box-shadow:var(--shadow); max-height:260px; overflow:auto; display:none;
+}
+.suggest.show{display:block}
+.suggest-item{
+  padding:8px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;
+}
+.suggest-item:hover, .suggest-item.active{background:rgba(255,255,255,.06)}
+.suggest-code{font-weight:700; min-width:62px}
+.suggest-price{margin-left:auto; color:var(--muted); font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;gap:10px;align-items:center">
+    <h1>🧰 Solicitação de Peças</h1>
+    <span id="badge-modo" class="badge">Modo: LOCAL</span>
+  </div>
+  <div class="toolbar">
+    <button id="btn-modo-local">💾 Local</button>
+    <button id="btn-modo-global">☁️ Global</button>
+    <button id="btn-theme">🌗 Tema</button>
+    <button id="btn-auditar">🩺 Checar Consistência</button>
+    <!-- Excel e PDF neutros (sem cor) -->
+    <button id="btn-xlsx">📊 Excel</button>
+    <button id="btn-pdf">📄 PDF</button>
+    <button id="btn-enviar" class="btn-ok">🚀 Enviar (Flow)</button>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>🔧 Dados da Solicitação</h2>
+    <div class="grid">
+      <label for="req-num">Nº Solicitação</label>
+      <input id="req-num" readonly>
+      <label for="tecnico">Técnico</label>
+      <input id="tecnico" list="tecnicos" placeholder="Selecione o técnico">
+      <datalist id="tecnicos"></datalist>
+
+      <label>Endereço</label>
+      <input id="endereco" readonly>
+      <label>Bairro</label>
+      <input id="bairro" readonly>
+      <label>Município</label>
+      <input id="municipio" readonly>
+      <label>UF</label>
+      <input id="uf" readonly>
+      <label>CEP</label>
+      <input id="cep" readonly>
+
+      <label>Observações</label>
+      <textarea id="obs" rows="2"></textarea>
+    </div>
+    <div class="small-hint">Atalhos: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> = adicionar item • <kbd>Ctrl</kbd> + <kbd>E</kbd> = enviar</div>
+  </section>
+
+  <section class="card">
+    <h2>📦 Itens da Solicitação</h2>
+    <datalist id="pecas"></datalist>
+    <table id="tabela-itens">
+      <thead>
+        <tr>
+          <th style="width:120px">Código</th>
+          <th>Descrição</th>
+          <th style="width:200px">ID Máquina</th>
+          <th style="width:90px">Qtd</th>
+          <th style="width:150px">Valor Unitário</th>
+          <th style="width:150px">Subtotal</th>
+          <th style="width:110px">Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button id="add-item" type="button" class="btn-ok">➕ Adicionar Item</button>
+      <div class="total-box">
+        Subtotal: <span id="subtotal">R$ 0,00</span>
+        · Desconto (%): <input id="desc-perc" type="number" min="0" max="100" value="0">
+        · Frete: <input id="frete" type="number" step="0.01" value="0">
+        · <strong>Total:</strong> <span id="total-geral">R$ 0,00</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <button id="btn-hist" type="button">📚 Históricos</button>
+      <button id="btn-nova" type="button">🆕 Nova Solicitação</button>
+    </div>
+  </section>
+
+  <section class="card" id="hist" style="display:none">
+    <h2>📚 Históricos</h2>
+
+    <!-- Filtros -->
+    <div class="hist-filtros">
+      <input id="f-num" placeholder="Filtrar por Nº">
+      <input id="f-data" type="date" placeholder="Data">
+      <input id="f-tec" placeholder="Técnico">
+      <select id="f-status">
+        <option value="">Status (todos)</option>
+        <option>Em andamento</option>
+        <option>Parcial</option>
+        <option>Concluído</option>
+      </select>
+      <button id="f-limpar">Limpar</button>
+    </div>
+
+    <div class="hist-empty" id="hist-empty" style="display:none">Sem registros para os filtros atuais.</div>
+
+    <table id="tabela-hist">
+      <thead><tr><th>Nº</th><th>Data</th><th>Técnico</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+
+<!-- Modal Relatório -->
+<div id="modal-audit" class="modal-backdrop">
+  <div class="modal">
+    <h3>Relatório de Consistência</h3>
+    <div id="audit-summary" class="muted"></div>
+    <div id="audit-issues" class="issues" style="margin-top:8px"></div>
+    <div class="actions" id="audit-actions">
+      <button id="audit-close">Fechar</button>
+      <button id="audit-fix">Corrigir e Fechar</button>
+      <button id="audit-ignore" class="btn-ok">Ignorar e Enviar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+'use strict';
+
+/* ========= Helpers ========= */
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const BRL = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const toast = (m,ms=2200)=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms);};
+const clamp = (v,min,max)=>Math.min(max,Math.max(min,v||0));
+const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
+
+/* ========= Config ========= */
+const LS = { PARTS:'sp_parts_v3', TECHS:'sp_techs_v3', ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', THEME:'sp_theme', MODO:'sp_modo_integracao' };
+const API_SAVE = 'COLE_AQUI_URL_DO_FLOW_SALVAR';
+const API_LIST = 'COLE_AQUI_URL_DO_FLOW_LISTAR';
+const API_UPDATE_STATUS = 'COLE_AQUI_URL_DO_FLOW_STATUS';
+const getModo = () => localStorage.getItem(LS.MODO) || 'local';
+const setModo = m => { localStorage.setItem(LS.MODO,m); $('#badge-modo').textContent='Modo: '+m.toUpperCase(); toast(m==='global'?'Modo GLOBAL (Excel) ativo':'Modo LOCAL ativo'); };
+
+/* ========= Peças (base) ========= */
+const itensBase=[{"codigo":"CS001","descricao":"Termostato Do Tanque","valor":269.7},{"codigo":"CS002","descricao":"Termostato Do Boiler","valor":901},{"codigo":"CS003","descricao":"Mangueira De Agua Quente","valor":107.35},{"codigo":"CS004","descricao":"Placa De Comando","valor":6307},{"codigo":"CS005","descricao":"Válvula De Agua","valor":159},{"codigo":"CS006","descricao":"Pressostato De Nível","valor":606.8},{"codigo":"CS007","descricao":"Mangueira De Borracha","valor":78.65},{"codigo":"CS008","descricao":"Sensor de Porta (Fim de Curso)","valor":108.45},{"codigo":"CS009","descricao":"Sensor De Nível","valor":606.74},{"codigo":"CS010","descricao":"Tampão Do Dreno Hd-80","valor":183.6},{"codigo":"CS011","descricao":"Tampão Do Dreno Hd-50","valor":119.06},{"codigo":"CS012","descricao":"Disjuntor 10A","valor":256.8},{"codigo":"CS013","descricao":"Rondana Da Porta","valor":70},{"codigo":"CS014","descricao":"Resistencia Do Tanque Com Flange Hd50","valor":1017.6},{"codigo":"CS015","descricao":"Resistencia Do Tanque Com Flange Hd80","valor":1023},{"codigo":"CS016","descricao":"Flange Braço Inferior/Superior","valor":890.4},{"codigo":"CS017","descricao":"Etiqueta Painel","valor":69},{"codigo":"CS018","descricao":"Relé De Proteção","valor":404.5},{"codigo":"CS019","descricao":"Cabo De Aço Da Porta","valor":25},{"codigo":"CS020","descricao":"Mola Da Porta","valor":75},{"codigo":"CS021","descricao":"Contatora","valor":327.8},{"codigo":"CS022","descricao":"Fonte Chaveada 3A","valor":130.9},{"codigo":"CS023","descricao":"Sensor Temperatura","valor":254.4},{"codigo":"CS024","descricao":"Resistências Boiler Com Flange Hd80","valor":1484},{"codigo":"CS025","descricao":"Resistências Boiler Com Flange Hd50","valor":1272},{"codigo":"CS026","descricao":"Bico Injetor","valor":114.48},{"codigo":"CS027","descricao":"Base Braço De Lavagem HD-50","valor":1078.66},{"codigo":"CS028","descricao":"Braço De Lavagem HD-50","valor":1900.96},{"codigo":"CS029","descricao":"Base Braço De Lavagem HD-80","valor":1078.66},{"codigo":"CS030","descricao":"Braço De Lavagem HD-80","valor":1900.96},{"codigo":"CS031","descricao":"Flauta De Enxague (Com bicos e conexão)","valor":971.66},{"codigo":"CS032","descricao":"Boiler Hd-50","valor":2033},{"codigo":"CS033","descricao":"Boiler Hd-80","valor":2354},{"codigo":"CS034","descricao":"Suporte Do Rack","valor":1123.6},{"codigo":"CS035","descricao":"Tela De Filtro De Resíduo Direito","valor":337.61},{"codigo":"CS036","descricao":"Tela De Filtro De Resíduo Esquerdo","valor":337.61},{"codigo":"CS037","descricao":"Painel Ihm","valor":1587.88},{"codigo":"CS038","descricao":"Adaptador De Braço","valor":321},{"codigo":"CS039","descricao":"Flange Superior Braço","valor":742},{"codigo":"CS040","descricao":"Flange Inferior Braço","valor":742},{"codigo":"CS041","descricao":"Tampa Unikit D","valor":65.48},{"codigo":"CS042","descricao":"Tampa Unikit S","valor":65.48},{"codigo":"CS043","descricao":"Kit (Molas, Roldanas, Cabo De Porta)","valor":165.6},{"codigo":"CS044","descricao":"Resistencia NT-300","valor":1696},{"codigo":"CS045","descricao":"Resistencia do TQ HDW-200","valor":1346.73},{"codigo":"CS046","descricao":"Resistencia do booster HDW-200","valor":1696},{"codigo":"CS047","descricao":"Valvula solenoide 220v 3/4\"","valor":168.48},{"codigo":"CS048","descricao":"Pressostato HDW-200","valor":453.68},{"codigo":"CS049","descricao":"Conjunto de cesto de residuo NT-300","valor":1123.05},{"codigo":"CS050","descricao":"kit Racks","valor":1506.6},{"codigo":"CS051","descricao":"Fim de curso HDW-200 ( Completo)","valor":2175.5},{"codigo":"CS052","descricao":"Fim de curso HDW-200","valor":789.21},{"codigo":"CS053","descricao":"BUCHAS DO BRAÇO GIRATORIO","valor":110},{"codigo":"CS054","descricao":"Etiqueta Painel NT","valor":545.9},{"codigo":"CS055","descricao":"Disjuntor 80A","valor":313.2},{"codigo":"CS056","descricao":"Cabo PP 5x 25mm (3MTS)","valor":848},{"codigo":"CS057","descricao":"Oring Resistencia boiler","valor":110},{"codigo":"CS058","descricao":"Roldana HD-80","valor":163.5},{"codigo":"CS059","descricao":"Chave do braço","valor":163.5},{"codigo":"CS060","descricao":"Disjuntor 125A","valor":1776.85},{"codigo":"CS061","descricao":"Bico enxague","valor":134.5},{"codigo":"CS062","descricao":"Chicote NR12","valor":3210},{"codigo":"CS063","descricao":"Mang Silicone","valor":173.88},{"codigo":"CS064","descricao":"Anel Elast Inox","valor":8.74},{"codigo":"CS065","descricao":"Valvula Solenoide HDW-200 NT","valor":172.5},{"codigo":"CS066","descricao":"Sonda Temperatura","valor":320.51},{"codigo":"CS067","descricao":"Conj Termostato","valor":886.72}];
+
+/* ========= Técnicos (com Eduardo Martins) ========= */
+const tecnicosBase={
+  "Ney Goncalves Cardoso":{"endereco":"Rua Juqueri,266","bairro":"Irajá","cep":"21.371-370","municipio":"Rio de Janeiro","uf":"RJ"},
+  "Welington Bastos Tavares":{"endereco":"AV Morumbi Qd 34 Lt 11","bairro":"Vila Mariana","cep":"75.134-550","municipio":"Anápolis","uf":"GO"},
+  "Davidson Alves Vitorino":{"endereco":"Jacarandá N° 157","bairro":"Sapucaias 3","cep":"32.071-236","municipio":"Contagem","uf":"MG"},
+  "Leandro Rocha Cruz":{"endereco":"R. Dom Pedro II 537A Fundos","bairro":"Centro","cep":"14.820-290","municipio":"Cidade Américo Brasiliense - SP","uf":"SP"},
+  "Marlon de Queiroz":{"endereco":"AV. Juscelino Kubitschek, 3700 Bloco-E, Apto -301","bairro":"Passare","cep":"60.861.634","municipio":"Fortaleza","uf":"CE"},
+  "Diego Abner de Oliveira":{"endereco":"Rua Mário Campos 71 AP 401 Bloco 08","bairro":"","cep":"12.221-750","municipio":"São Jose do Campos","uf":"SP"},
+  "Rodrigo Lazari De Carvalho":{"endereco":"Rua alonso Vasconcelos pacheco 1327","bairro":"","cep":"09310-695","municipio":"Maua","uf":"SP"},
+  "Getulio Santos De Almeida":{"endereco":"Rua Nara Leão, N° 125. Apto Jarmim 1103","bairro":"Jardim Limoeiro","cep":"29.164-125","municipio":"Serra","uf":"ES"},
+  "Marcio Andrade Dos Santos":{"endereco":"1° Travessa Renato Lima de Carvalho N° 33","bairro":"Jardim Alvorada","cep":"42.850-000","municipio":"Dias davila","uf":"BA"},
+  "Humberto Elias Dos Santos Da Silva":{"endereco":"Av Jose Aloisio Filho N° 411 Apto 368 Bloco Q","bairro":"Humaita","cep":"90.250-180","municipio":"Porto Alegre","uf":"RS"},
+  "Emerson Ribeiro":{"endereco":"Rua São Cristóvão, 471 Casa 03","bairro":"","cep":"88.080-320","municipio":"Florianópolis","uf":"SC"},
+  "Antonio Ferreira De Santana Filho":{"endereco":"Av Curió - Campanário, Ap 510 Bloco B","bairro":"","cep":"09.925-000","municipio":"Diadema","uf":"SP"},
+  "Fernando Silva":{"endereco":"Hermelindo Lazarini, 69","bairro":"Jardim das Nações","cep":"79.081-714","municipio":"Campo Grande","uf":"MS"},
+  "Joao Celso Silva De Souza":{"endereco":"Leonardo da Vinci 96 Bloco C Ap 306","bairro":"Curado II","cep":"54.220-000","municipio":"Jaboatão dos Guararapes","uf":"PE"},
+  "Carlos Alberto De Vasconcelos Junior":{"endereco":"Deputado João Ursulo Ribeiro Filho A 149","bairro":"Mangabeira I","cep":"58.055-360","municipio":"João Pessoa","uf":"PB"},
+  "Antonio Rocker":{"endereco":"Rua Estoril 131","bairro":"Veleiros","cep":"47.730-900","municipio":"São Paulo","uf":"SP"},
+  "Sebastião Gomes Ribeiro":{"endereco":"RUA THOME DE SOUZA, 335","bairro":"LAGOA GRANDE – SEDE","cep":"45.810-000","municipio":"PORTO SEGURO","uf":"BA"},
+  "Dalvino Carlos Santos Junior":{"endereco":"Rua vivaldo sales 158, apartamento 41","bairro":"jardim são josé","cep":"11-430 140","municipio":"guarujá são paulo","uf":"SP"},
+  "Brunno Diniz Mendes":{"endereco":"Rua Nova 1 N 22B","bairro":"Tijupá Queimado","cep":"65.110-000","municipio":"São José de Ribamar","uf":"MA"},
+  "Maicon Cordeiro Chaves":{"endereco":"Rua Saxonia N° 2013","bairro":"Vila Itoupava","cep":"89.075-255","municipio":"Blumenau","uf":"SC"},
+  "Ediveton Pedro Da Silva":{"endereco":"Rua Mário Prieto 500","bairro":"Jardim Paulista","cep":"13.310-000","municipio":"Itu","uf":"SP"},
+  "Eduardo Martins":{"endereco":"Rua Rafael da Silva e Souza N°510","bairro":"Cidade Líder","cep":"08280-090","municipio":"São Paulo","uf":"SP"}
+};
+
+/* ========= Datalists ========= */
+function preencherListas(){
+  // Técnicos ordenados
+  const dlT=$('#tecnicos'); dlT.innerHTML='';
+  Object.keys(tecnicosBase).sort(collator.compare).forEach(n=>{
+    const o=document.createElement('option'); o.value=n; dlT.appendChild(o);
+  });
+  // Datalist de peças (mantido também, além do autocomplete novo)
+  const dlP=$('#pecas'); dlP.innerHTML='';
+  itensBase.forEach(p=>{
+    const o=document.createElement('option');
+    o.value=p.codigo;
+    o.label=`${p.codigo} — ${p.descricao} — ${BRL(p.valor)}`;
+    dlP.appendChild(o);
+  });
+}
+
+/* ========= Endereço do técnico ========= */
+function preencherEndereco(nome){
+  const d=tecnicosBase[nome]; if(!d) return;
+  $('#endereco').value=d.endereco||''; $('#bairro').value=d.bairro||'';
+  $('#municipio').value=d.municipio||''; $('#uf').value=d.uf||''; $('#cep').value=d.cep||'';
+}
+
+/* ========= Busca item ========= */
+function normalizeCode(v){
+  if(!v) return null;
+  const raw=String(v).toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(/^CS\d{1,3}$/.test(raw)) return 'CS'+raw.slice(2).padStart(3,'0');
+  const m=String(v).match(/cs\s*-?\s*(\d{1,3})/i); if(m) return 'CS'+m[1].padStart(3,'0');
+  if(/^\d{1,3}$/.test(raw)) return 'CS'+raw.padStart(3,'0');
+  return null;
+}
+function findItem(input){
+  const norm=normalizeCode(input);
+  if(norm){ return itensBase.find(x=>x.codigo===norm)||null; }
+  const s=(input||'').toString().trim().toLowerCase();
+  return itensBase.find(x=>x.descricao.toLowerCase()===s) ||
+         itensBase.find(x=>x.descricao.toLowerCase().startsWith(s)) || null;
+}
+function fillRowFromItem(tr,item){
+  tr.querySelector('.codigo').value=item.codigo;
+  tr.querySelector('.desc').value=item.descricao;
+  tr.querySelector('.valor').value=Number(item.valor||0);
+  calcTotal();
+}
+
+/* ========= ID Máquina (obrigatório) ========= */
+function normalizeId(value){
+  if(!value) return '';
+  let v = String(value).toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-');
+  return v;
+}
+function isIdValid(v){
+  if(!v) return false;
+  const base = /^[A-Z0-9-]{6,}$/;
+  const recomendado = /^[A-Z0-9-]+-\d{3}$/;
+  return recomendado.test(v) || base.test(v);
+}
+function wireIdValidation(input){
+  const run = ()=>{
+    const nv = normalizeId(input.value);
+    if(input.value!==nv) input.value = nv;
+    if(!nv || !isIdValid(nv)) input.classList.add('invalid'); else input.classList.remove('invalid');
+  };
+  input.addEventListener('input',run);
+  input.addEventListener('change',run);
+  input.addEventListener('blur',run);
+  input.title = 'ID Máquina (MAIÚSCULO). Ex.: HLHDW8017HL2091-027';
+  run();
+}
+
+/* ========= AUTOCOMPLETE de peças ========= */
+function makeSuggestUI(input, rowRef){
+  // wrapper pra posicionar corretamente
+  const wrap=document.createElement('div');
+  wrap.className='suggest-wrap';
+  input.parentElement.insertBefore(wrap, input);
+  wrap.appendChild(input);
+
+  const list=document.createElement('div');
+  list.className='suggest';
+  wrap.appendChild(list);
+
+  let results=[], active=-1, lastQuery='';
+
+  const render=(items)=>{
+    list.innerHTML='';
+    if(!items.length){ list.classList.remove('show'); return; }
+    items.slice(0,100).forEach((p,idx)=>{
+      const div=document.createElement('div'); div.className='suggest-item'; div.dataset.idx=idx;
+      const c=document.createElement('span'); c.className='suggest-code'; c.textContent=p.codigo;
+      const d=document.createElement('span'); d.textContent=p.descricao;
+      const pr=document.createElement('span'); pr.className='suggest-price'; pr.textContent=BRL(p.valor);
+      div.appendChild(c); div.appendChild(d); div.appendChild(pr);
+      div.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); choose(idx); });
+      list.appendChild(div);
+    });
+    list.classList.add('show');
+    active=-1;
+  };
+
+  const choose=(idx)=>{
+    const p=results[idx]; if(!p) return;
+    // Preenche os campos do row
+    const tr=rowRef.closest('tr');
+    tr.querySelector('.codigo').value=p.codigo;
+    tr.querySelector('.desc').value=p.descricao;
+    tr.querySelector('.valor').value=p.valor;
+    list.classList.remove('show');
+    calcTotal();
+  };
+
+  const keyNav=(ev)=>{
+    if(!list.classList.contains('show')) return;
+    const max=results.length-1;
+    const items=[...list.querySelectorAll('.suggest-item')];
+    if(ev.key==='ArrowDown'){ ev.preventDefault(); active=Math.min(max,active+1); }
+    else if(ev.key==='ArrowUp'){ ev.preventDefault(); active=Math.max(0,active-1); }
+    else if(ev.key==='Enter'){ ev.preventDefault(); if(active>=0) choose(active); return; }
+    else if(ev.key==='Escape'){ list.classList.remove('show'); return; }
+    items.forEach((el,i)=>el.classList.toggle('active',i===active));
+    if(active>=0){ items[active].scrollIntoView({block:'nearest'}); }
+  };
+
+  const doFilter=()=>{
+    const q=input.value.trim().toLowerCase();
+    if(q===lastQuery) return;
+    lastQuery=q;
+    if(!q){ list.classList.remove('show'); return; }
+    results = itensBase.filter(p=>{
+      return p.codigo.toLowerCase().includes(q) || p.descricao.toLowerCase().includes(q);
+    });
+    render(results);
+  };
+
+  input.addEventListener('input',doFilter);
+  input.addEventListener('keydown',keyNav);
+  input.addEventListener('blur',()=>setTimeout(()=>list.classList.remove('show'),150));
+}
+
+/* ========= Tabela ========= */
+function addRow(pref={}){
+  const tb=$('#tabela-itens tbody');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`
+    <td><input list="pecas" class="codigo" placeholder="CS001" value="${pref.codigo||''}"></td>
+    <td><input class="desc" placeholder="Digite nome/código da peça" value="${pref.descricao||''}"></td>
+    <td><input class="idmaq" placeholder="Ex.: HLHDW8017HL2091-027" value="${(pref.idMaquina||pref.idmaq||'').toString().toUpperCase()}"></td>
+    <td><input type="number" class="qtd" min="1" value="${clamp(pref.qtd,1,9999)||1}"></td>
+    <td><input type="number" class="valor" step="0.01" min="0" value="${Math.max(0,Number(pref.valor||0))||''}"></td>
+    <td class="sub">R$ 0,00</td>
+    <td><button class="btn-danger del" type="button">Excluir</button></td>`;
+  tb.appendChild(tr);
+
+  const iCod=tr.querySelector('.codigo');
+  const iDesc=tr.querySelector('.desc');
+  const iQtd=tr.querySelector('.qtd');
+  const iVal=tr.querySelector('.valor');
+  const iId =tr.querySelector('.idmaq');
+
+  iCod.addEventListener('input',()=>{ const it=findItem(iCod.value); if(it) fillRowFromItem(tr,it); });
+  iCod.addEventListener('change',()=>{ const it=findItem(iCod.value); if(it) fillRowFromItem(tr,it); });
+  iDesc.addEventListener('change',()=>{ const it=findItem(iDesc.value); if(it) fillRowFromItem(tr,it); });
+
+  // AUTOCOMPLETE inteligente na descrição
+  makeSuggestUI(iDesc, iDesc);
+
+  iQtd.addEventListener('input',()=>{ iQtd.value = clamp(iQtd.value,1,9999); calcTotal(); });
+  iVal.addEventListener('input',()=>{ iVal.value = Math.max(0,Number(iVal.value||0)); calcTotal(); });
+  tr.querySelector('.del').addEventListener('click',(e)=>{ e.preventDefault(); tr.remove(); calcTotal(); });
+
+  wireIdValidation(iId);
+
+  if(pref.codigo){ const it=findItem(pref.codigo); if(it) fillRowFromItem(tr,it); }
+  calcTotal();
+}
+function collectItems(){
+  const itens=[];
+  $$('#tabela-itens tbody tr').forEach(tr=>{
+    const codigo=tr.querySelector('.codigo').value.trim().toUpperCase();
+    const descricao=tr.querySelector('.desc').value.trim();
+    const idMaquina=normalizeId((tr.querySelector('.idmaq').value||'').trim());
+    const qtd=clamp(parseFloat(tr.querySelector('.qtd').value),1,9999);
+    const valor=Math.max(0, parseFloat(tr.querySelector('.valor').value)||0);
+    if(descricao && qtd>0){ itens.push({codigo,descricao,idMaquina,qtd,valor,subtotal:qtd*valor}); }
+  });
+  return itens;
+}
+function calcTotal(){
+  let subtotal=0;
+  $$('#tabela-itens tbody tr').forEach(tr=>{
+    const q=clamp(parseFloat(tr.querySelector('.qtd').value),1,9999);
+    const v=Math.max(0, parseFloat(tr.querySelector('.valor').value)||0);
+    const s=q*v; subtotal+=s;
+    tr.querySelector('.sub').textContent=BRL(s);
+  });
+  const desc=clamp(parseFloat($('#desc-perc').value),0,100);
+  const frete=Math.max(0, parseFloat($('#frete').value)||0);
+  const total=Math.max(0, subtotal*(1-(desc/100)) + frete);
+  $('#desc-perc').value = desc;
+  $('#frete').value = frete;
+  $('#subtotal').textContent=BRL(subtotal);
+  $('#total-geral').textContent=BRL(total);
+  return {subtotal,total,descPerc:desc,frete};
+}
+
+/* ========= Sequência ========= */
+function gerarNumero(){
+  const d=new Date();
+  const key = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  let seq=JSON.parse(localStorage.getItem(LS.SEQ)||'{}');
+  if(seq.date!==key){ seq={date:key,counter:1}; }
+  const numero=`REQ-${key}-${String(seq.counter).padStart(4,'0')}`;
+  $('#req-num').value=numero;
+  seq.counter++; localStorage.setItem(LS.SEQ, JSON.stringify(seq));
+}
+
+/* ========= Status ========= */
+const STATUS = ['Em andamento','Parcial','Concluído'];
+function applyStatusStyle(selectEl, value){
+  selectEl.classList.remove('status-and','status-parc','status-conc');
+  if(value==='Concluído') selectEl.classList.add('status-conc');
+  else if(value==='Parcial') selectEl.classList.add('status-parc');
+  else selectEl.classList.add('status-and');
+}
+function makeStatusSelect(value, disabled=false){
+  const sel=document.createElement('select');
+  sel.className='status';
+  sel.disabled = disabled;
+  STATUS.forEach(st=>{
+    const opt=document.createElement('option');
+    opt.value=st; opt.textContent=st;
+    if(st===value) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  applyStatusStyle(sel, value||'Em andamento');
+  sel.addEventListener('change',()=>applyStatusStyle(sel, sel.value));
+  return sel;
+}
+
+/* ========= Exports ========= */
+function orderToAOA(o){
+  const head=['Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'];
+  const rows=(o.itens||[]).map(it=>[
+    it.codigo||'',(it.idMaquina||'').toUpperCase(),it.qtd,it.descricao,it.valor,(it.qtd*it.valor)
+  ]);
+  return [head,...rows];
+}
+function exportXLSXFrom(o){
+  const wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.aoa_to_sheet(orderToAOA(o));
+  ws1['!cols']=[{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Itens');
+
+  const ws2=XLSX.utils.aoa_to_sheet([
+    ['Número',o.numero],['Data',o.data],['Técnico',o.tecnico],
+    ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
+    ['Município/UF',`${o.municipio||''} - ${o.uf||''}`],
+    ['CEP',o.cep||''],['Observações',o.obs||'-'],
+    ['Subtotal',o.subtotal||0],['Desconto (%)',o.descPerc||0],['Frete',o.frete||0],['TOTAL',o.total||0]
+  ]);
+  ws2['!cols']=[{wch:18},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Resumo');
+
+  XLSX.writeFile(wb,`${o.numero||'SOLICITACAO'}.xlsx`);
+  toast('Excel (.xlsx) gerado ✅');
+}
+async function baixarPDFFrom(o){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const M = 40, PAGE_W = doc.internal.pageSize.getWidth(), CONTENT_W = PAGE_W - M*2;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('Solicitação de Peças e Componentes', M, M);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  let y = M + 24;
+  doc.text(`Número: ${o.numero||'-'}`, M, y);
+  doc.text(`Data: ${o.data||'-'}`, M + 260, y);
+  y += 14;
+  doc.text(`Técnico: ${o.tecnico||'-'}`, M, y); y += 14;
+  doc.text(`Endereço: ${(o.endereco||'-')}, ${(o.bairro||'')}`, M, y); y += 14;
+  doc.text(`${o.municipio||''} - ${o.uf||''} • CEP: ${o.cep||''}`, M, y);
+
+  if (o.obs) {
+    y += 18; doc.setFont('helvetica','bold'); doc.text('Observações:', M, y);
+    doc.setFont('helvetica','normal'); y += 12;
+    const obs = doc.splitTextToSize(o.obs, CONTENT_W);
+    doc.text(obs, M, y);
+    y += obs.length * 12;
+  }
+
+  const COL_COD=60, COL_ID=115, COL_QTD=40, COL_VUNIT=65, COL_SUB=70;
+  const COL_DESC = CONTENT_W - (COL_COD + COL_ID + COL_QTD + COL_VUNIT + COL_SUB);
+
+  doc.autoTable({
+    startY: y + 10,
+    margin: { left: M, right: M },
+    tableWidth: CONTENT_W,
+    styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak' },
+    headStyles: { fillColor: [30,64,175] },
+    columnStyles: { 0:{cellWidth:COL_COD}, 1:{cellWidth:COL_ID}, 2:{cellWidth:COL_QTD, halign:'right'}, 3:{cellWidth:COL_DESC}, 4:{cellWidth:COL_VUNIT, halign:'right'}, 5:{cellWidth:COL_SUB, halign:'right'} },
+    head: [['Código','ID Máquina','Qtd','Descrição','Valor Unit.','Subtotal']],
+    body: (o.itens||[]).map(it=>[
+      it.codigo||'', (it.idMaquina||'').toUpperCase(), it.qtd, it.descricao, BRL(it.valor), BRL(it.qtd*it.valor)
+    ]),
+    pageBreak: 'auto'
+  });
+
+  const fy = doc.lastAutoTable.finalY + 12;
+  doc.setFont('helvetica','bold'); doc.setFontSize(12);
+  doc.text('Resumo', M, fy);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  let ly = fy + 14;
+  [
+    `Subtotal: ${BRL(o.subtotal||0)}`,
+    `Desconto: ${(o.descPerc||0).toFixed(2)}% (${BRL((o.subtotal||0)*(Number(o.descPerc||0)/100))})`,
+    `Frete: ${BRL(o.frete||0)}`,
+    `TOTAL: ${BRL(o.total||0)}`
+  ].forEach(s => { doc.text(s, M, ly); ly += 14; });
+
+  const blob = doc.output('blob');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${o.numero||'SOLICITACAO'}.pdf`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+  toast('PDF gerado ✅');
+}
+
+/* ========= Local ========= */
+function salvarLocal(){
+  const tecnico=$('#tecnico').value; if(!tecnico){ toast('Selecione o técnico'); return false; }
+  const itens=collectItems(); if(!itens.length){ toast('Inclua ao menos 1 item'); return false; }
+  if($$('.idmaq.invalid').length){ toast('Verifique os ID(s) de Máquina em vermelho'); return false; }
+
+  const tot=calcTotal();
+  const dados={
+    numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
+    tecnico, endereco:$('#endereco').value, bairro:$('#bairro').value, municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value,
+    obs:$('#obs').value, ...tot, itens, status:'Em andamento'
+  };
+  const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+  const i=lista.findIndex(o=>o.numero===dados.numero);
+  if(i>=0){ dados.status = lista[i].status || dados.status; lista[i]=dados; } else { lista.push(dados); }
+  localStorage.setItem(LS.ORD, JSON.stringify(lista));
+  localStorage.setItem(LS.CUR, JSON.stringify(dados));
+  montarHistoricoLocal();
+  return true;
+}
+function updateStatusLocal(numero, novo){
+  let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+  const i=lista.findIndex(o=>o.numero===numero);
+  if(i<0) return false;
+  lista[i].status = novo;
+  localStorage.setItem(LS.ORD, JSON.stringify(lista));
+  return true;
+}
+
+/* ========= Histórico (LOCAL) + filtros ========= */
+function aplicaFiltrosLinhas(rows){
+  const fnum = ($('#f-num').value||'').trim().toLowerCase();
+  const fdata = ($('#f-data').value||'').trim();
+  const ftec = ($('#f-tec').value||'').trim().toLowerCase();
+  const fstat = ($('#f-status').value||'').trim();
+
+  rows.forEach(tr=>{
+    const c = tr.children;
+    const num = (c[0].textContent||'').toLowerCase();
+    const dat = (c[1].textContent||'').trim();
+    const tec = (c[2].textContent||'').toLowerCase();
+    const sel = tr.querySelector('select.status');
+    const st  = sel ? sel.value : '';
+
+    const ok =
+      (!fnum || num.includes(fnum)) &&
+      (!fdata || dat===fdata) &&
+      (!ftec || tec.includes(ftec)) &&
+      (!fstat || st===fstat);
+
+    tr.style.display = ok ? '' : 'none';
+  });
+
+  const anyVisible = [...rows].some(tr=>tr.style.display!=='none');
+  $('#hist-empty').style.display = anyVisible ? 'none' : 'block';
+}
+function bindFiltros(){
+  ['#f-num','#f-data','#f-tec','#f-status'].forEach(id=>{
+    $(id).addEventListener('input',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
+    $(id).addEventListener('change',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
+  });
+  $('#f-limpar').addEventListener('click',()=>{
+    $('#f-num').value=''; $('#f-data').value=''; $('#f-tec').value=''; $('#f-status').value='';
+    aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
+  });
+}
+function montarHistoricoLocal(){
+  const tb=$('#tabela-hist tbody'); tb.innerHTML='';
+  const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+  $('#hist').style.display=lista.length?'block':'none';
+  for(const o of lista){
+    const tr=document.createElement('tr');
+
+    const sel=makeStatusSelect(o.status||'Em andamento', false);
+    sel.addEventListener('change',()=>{
+      if(sel.value==='Concluído'){
+        const ok=confirm('Confirmar entrega do material para concluir?');
+        if(!ok){ sel.value=o.status||'Em andamento'; applyStatusStyle(sel, sel.value); return; }
+      }
+      updateStatusLocal(o.numero, sel.value);
+      o.status=sel.value;
+      toast('Status atualizado: '+sel.value);
+    });
+    const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
+
+    tr.innerHTML=`<td>${o.numero}</td><td>${o.data}</td><td>${o.tecnico}</td><td>${o.itens?.length||0}</td><td>${BRL(o.total||0)}</td>`;
+    tr.appendChild(tdStatus);
+
+    const tdAcoes=document.createElement('td');
+    const bAbrir=document.createElement('button'); bAbrir.textContent='Abrir';
+    bAbrir.addEventListener('click',()=>abrirLocal(o.numero));
+    const bExcel=document.createElement('button'); bExcel.textContent='📊 Excel';
+    bExcel.addEventListener('click',()=>exportXLSXFrom(o));
+    const bPdf=document.createElement('button'); bPdf.textContent='📄 PDF';
+    bPdf.addEventListener('click',()=>baixarPDFFrom(o));
+    tdAcoes.appendChild(bAbrir);
+    tdAcoes.appendChild(bExcel);
+    tdAcoes.appendChild(bPdf);
+    tr.appendChild(tdAcoes);
+
+    tb.appendChild(tr);
+  }
+  bindFiltros();
+  aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
+}
+function abrirLocal(num){
+  const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+  const o=lista.find(x=>x.numero===num); if(!o) return;
+  $('#req-num').value=o.numero;
+  $('#tecnico').value=o.tecnico; preencherEndereco(o.tecnico);
+  $('#obs').value=o.obs||'';
+  $('#desc-perc').value=o.descPerc||0;
+  $('#frete').value=o.frete||0;
+  const tbody=$('#tabela-itens tbody'); tbody.innerHTML='';
+  (o.itens||[]).forEach(it=>addRow(it));
+  calcTotal(); toast('Solicitação carregada');
+}
+
+/* ========= Excel/PDF do formulário atual ========= */
+function getOrder(){ const it=collectItems(), c=calcTotal(); return {
+  numero:$('#req-num').value, data:new Date().toLocaleDateString('pt-BR'),
+  tecnico:$('#tecnico').value, endereco:$('#endereco').value, bairro:$('#bairro').value,
+  municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value, obs:$('#obs').value,
+  itens:it, subtotal:c.subtotal, total:c.total, descPerc:c.descPerc, frete:c.frete
+};}
+function exportXLSX(){ exportXLSXFrom(getOrder()); }
+async function baixarPDF(){ await baixarPDFFrom(getOrder()); }
+
+/* ========= Flow (opcional) ========= */
+async function listarGlobalExcel(){
+  if(!API_LIST || API_LIST.startsWith('COLE_AQUI')) throw new Error('API_LIST não configurada');
+  const r=await fetch(API_LIST); if(!r.ok) throw new Error('Falha ao listar no Flow');
+  const j=await r.json(); if(!j.success) throw new Error('Resposta inválida do Flow');
+  const rows=j.rows||[];
+  return rows.map(r=>({
+    numero:r.Numero,data:r.Data,tecnico:r.Tecnico,endereco:r.Endereco,bairro:r.Bairro,
+    municipio:r.Municipio,uf:r.UF,cep:r.CEP,subtotal:Number(r.Subtotal||0),descPerc:Number(r.Desconto||0),
+    frete:Number(r.Frete||0),total:Number(r.Total||0),
+    status:r.Status||'Em andamento',
+    itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
+  }));
+}
+async function atualizarStatusGlobal(numero, novoStatus){
+  if(!API_UPDATE_STATUS || API_UPDATE_STATUS.startsWith('COLE_AQUI')) throw new Error('API_UPDATE_STATUS não configurada');
+  const payload = { numero, status: novoStatus };
+  const r = await fetch(API_UPDATE_STATUS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if(!r.ok) throw new Error('Falha ao atualizar status no Flow');
+  const j = await r.json(); if(!j.success) throw new Error('Resposta inválida do Flow');
+  return true;
+}
+
+/* ========= Boot ========= */
+function novaSolicitacao(){
+  $('#tecnico').value=''; $('#endereco').value=''; $('#bairro').value='';
+  $('#municipio').value=''; $('#uf').value=''; $('#cep').value='';
+  $('#obs').value=''; $('#desc-perc').value=0; $('#frete').value=0;
+  $('#tabela-itens tbody').innerHTML='';
+  gerarNumero(); addRow(); toast('Nova solicitação iniciada 🔄');
+}
+function boot(){
+  if(localStorage.getItem(LS.THEME)==='light') document.documentElement.classList.add('light');
+  $('#btn-theme').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem(LS.THEME,document.documentElement.classList.contains('light')?'light':'dark');});
+  $('#btn-modo-local').addEventListener('click',()=>setModo('local'));
+  $('#btn-modo-global').addEventListener('click',()=>setModo('global'));
+
+  $('#btn-pdf').addEventListener('click',baixarPDF);
+  $('#btn-xlsx').addEventListener('click',exportXLSX);
+
+  $('#btn-auditar').addEventListener('click',()=>{
+    const rep = auditarPedido(); showAuditModal(rep);
+  });
+
+  $('#btn-enviar').addEventListener('click',()=>{
+    const rep = auditarPedido();
+    if(!rep.ok){
+      showAuditModal(rep,{ onIgnoreSend: ()=>{
+        const ok = salvarLocal();
+        if(ok){ novaSolicitacao(); }
+      }});
+      return;
+    }
+    const ok = salvarLocal();
+    if(ok){ novaSolicitacao(); }
+  });
+
+  $('#btn-hist').addEventListener('click',async()=>{
+    const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
+    if(getModo()==='global'){
+      try{
+        const lista=await listarGlobalExcel(); 
+        if(!lista.length){ hist.style.display='none'; return; }
+        hist.style.display='block';
+        for(const o of lista){
+          const tr=document.createElement('tr');
+
+          const sel=makeStatusSelect(o.status||'Em andamento', false);
+          sel.addEventListener('change', async ()=>{
+            let newVal = sel.value;
+            if(newVal==='Concluído'){
+              const ok=confirm('Confirmar entrega do material para concluir?');
+              if(!ok){ sel.value=o.status||'Em andamento'; applyStatusStyle(sel, sel.value); return; }
+            }
+            try{
+              await atualizarStatusGlobal(o.numero, newVal);
+              toast('Status atualizado no GLOBAL: '+newVal);
+              o.status=newVal;
+            }catch(e){
+              console.error(e);
+              toast('Falha ao atualizar no GLOBAL — status não alterado');
+              sel.value = o.status||'Em andamento';
+              applyStatusStyle(sel, sel.value);
+            }
+          });
+          const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
+
+          tr.innerHTML=`<td>${o.numero}</td><td>${o.data}</td><td>${o.tecnico||'-'}</td><td>${o.itens?.length||0}</td><td>${BRL(o.total||0)}</td>`;
+          tr.appendChild(tdStatus);
+
+          const tdA=document.createElement('td');
+          const bExcel=document.createElement('button'); bExcel.textContent='📊 Excel';
+          bExcel.addEventListener('click',()=>exportXLSXFrom(o));
+          const bPdf=document.createElement('button'); bPdf.textContent='📄 PDF';
+          bPdf.addEventListener('click',()=>baixarPDFFrom(o));
+          tdA.appendChild(bExcel);
+          tdA.appendChild(bPdf);
+          tr.appendChild(tdA);
+
+          tbody.appendChild(tr);
+        }
+        hist.style.display='block';
+        bindFiltros();
+        aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
+      }catch(e){ console.error(e); toast('Erro no Excel — mostrando LOCAL'); montarHistoricoLocal(); }
+    } else {
+      montarHistoricoLocal();
+    }
+  });
+
+  $('#btn-nova').addEventListener('click',()=>{ const ok = salvarLocal(); if(ok){ novaSolicitacao(); } });
+
+  preencherListas();
+  $('#tecnico').addEventListener('input',()=>preencherEndereco($('#tecnico').value));
+
+  $('#add-item').addEventListener('click',()=>addRow());
+  document.addEventListener('keydown', (ev)=>{
+    if(ev.ctrlKey && ev.key === 'Enter'){ ev.preventDefault(); addRow(); }
+    if(ev.ctrlKey && (ev.key.toLowerCase() === 'e')){ ev.preventDefault(); $('#btn-enviar').click(); }
+  });
+
+  $('#badge-modo').textContent='Modo: '+getModo().toUpperCase();
+  novaSolicitacao();
+}
+
+/* ========= Auditoria ========= */
+function auditarPedido(){
+  $$('#tabela-itens tbody tr').forEach(tr=>tr.classList.remove('row-error'));
+  const issues=[]; const seenPair = new Map(); let hasBlocking = false;
+
+  $$('#tabela-itens tbody tr').forEach((tr,idx)=>{
+    const row = idx+1;
+    const idEl = tr.querySelector('.idmaq');
+    const id = normalizeId(idEl.value||'');
+    const cod = (tr.querySelector('.codigo').value||'').trim().toUpperCase();
+    const qtd = clamp(parseFloat(tr.querySelector('.qtd').value),1,9999);
+    const val = Math.max(0, parseFloat(tr.querySelector('.valor').value)||0);
+    const desc = (tr.querySelector('.desc').value||'').trim();
+
+    if(!id || !isIdValid(id)){ issues.push({row,type:'ID inválido',level:'warn',msg:`Linha ${row}: ID Máquina ausente ou inválido.`}); tr.classList.add('row-error'); }
+    if(!(val>0)){ issues.push({row,type:'Preço inválido',level:'warn',msg:`Linha ${row}: valor unitário não preenchido ou zero.`}); tr.classList.add('row-error'); }
+    if(!(qtd>=1)){ issues.push({row,type:'Qtd inválida',level:'warn',msg:`Linha ${row}: quantidade deve ser ≥ 1.`}); tr.classList.add('row-error'); }
+    if(!desc){ issues.push({row,type:'Descrição faltando',level:'warn',msg:`Linha ${row}: descrição do item está vazia.`}); tr.classList.add('row-error'); }
+
+    if(id && cod){
+      const key = cod+'|'+id;
+      const arr = seenPair.get(key) || [];
+      arr.push(row); seenPair.set(key,arr);
+    }
+  });
+
+  for(const [pair,rows] of seenPair.entries()){
+    if(rows.length>1){
+      rows.forEach(r=>{
+        const tr=$('#tabela-itens tbody').children[r-1];
+        tr.classList.add('row-error');
+      });
+      issues.push({row:null,type:'Duplicidade Código+ID',level:'block',msg:`Par (Código+ID) repetido nas linhas ${rows.join(', ')} — unifique quantidades.`});
+      hasBlocking = true;
+    }
+  }
+  return { ok: !hasBlocking, issues, hasBlocking };
+}
+function showAuditModal(report, {onIgnoreSend}={}){
+  const back = $('#modal-audit');
+  const list = $('#audit-issues');
+  const sum = $('#audit-summary');
+  const btnIgnore = $('#audit-ignore');
+
+  list.innerHTML='';
+  if(report.issues.length===0){
+    sum.textContent = 'Tudo certo ✅ — nenhuma inconsistência encontrada.';
+  } else {
+    const counts = report.issues.reduce((acc,i)=>{ acc[i.level]=(acc[i.level]||0)+1; return acc; },{});
+    const parts = Object.entries(counts).map(([k,v])=>(k==='block'?'bloqueios':'avisos')+': '+v).join(' • ');
+    sum.textContent = `Foram encontradas ${report.issues.length} ocorrências — ${parts}.`;
+    report.issues.forEach(it=>{
+      const div=document.createElement('div');
+      div.className='issue';
+      div.textContent = '• ' + it.msg;
+      list.appendChild(div);
+    });
+  }
+
+  btnIgnore.style.display= report.hasBlocking ? 'none' : 'inline-block';
+
+  back.style.display='flex';
+  const close = ()=> back.style.display='none';
+  $('#audit-close').onclick = close;
+  $('#audit-fix').onclick = close;
+  btnIgnore.onclick = ()=>{ close(); if(typeof onIgnoreSend==='function') onIgnoreSend(); };
+}
+
+if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',boot); } else { boot(); }
+</script>
+</body>
+</html>
+
+
+
+
+
