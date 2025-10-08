@@ -604,10 +604,22 @@ function bindFiltros(){
 /* ========= Exports ========= */
 function orderToAOA(o){
   const dataSolic = fmtDataSolic(o.data);
-  const head=['Nº Solicitação','Data da Solicitação','Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'];
+  // Cabeçalho com Técnico (3ª coluna)
+  const head=[
+    'Nº Solicitação',
+    'Data da Solicitação',
+    'Técnico',
+    'Código',
+    'ID Máquina',
+    'Qtd',
+    'Descrição',
+    'Valor Unitário',
+    'Subtotal'
+  ];
   const rows=(o.itens||[]).map(it=>[
     o.numero || '',
     dataSolic,
+    o.tecnico || '-',
     it.codigo||'',
     (it.idMaquina||''),
     it.qtd,
@@ -619,10 +631,13 @@ function orderToAOA(o){
 }
 function exportXLSXFrom(o){
   const wb=XLSX.utils.book_new();
+  // Itens (com Técnico)
   const ws1=XLSX.utils.aoa_to_sheet(orderToAOA(o));
-  ws1['!cols']=[{wch:22},{wch:18},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
+  //            Nº        Data       Técnico    Código     ID Máquina   Qtd   Descrição    Valor Unit  Subtotal
+  ws1['!cols']=[{wch:22},{wch:18},{wch:30},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Itens');
 
+  // Resumo
   const ws2=XLSX.utils.aoa_to_sheet([
     ['Número',o.numero],['Data',fmtDataSolic(o.data)],['Técnico',o.tecnico],
     ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
@@ -827,7 +842,7 @@ async function listarGlobalExcel(){
     subtotal:Number(r.Subtotal||0),
     descPerc:Number(r.Desconto||0),
     frete:Number(r.Frete||0),
-    total:Number(r.Total||0),            // ✅ corrigido: agora com dois pontos
+    total:Number(r.Total||0),            // ✅ corrigido
     status:r.Status||'Supervisor Diversey',
     itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
   }));
