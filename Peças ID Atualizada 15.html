@@ -237,6 +237,15 @@ const toast = (m,ms=2200)=>{const t=$('#toast');t.textContent=m;t.classList.add(
 const clamp = (v,min,max)=>Math.min(max,Math.max(min,v||0));
 const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
 
+// ✅ NOVO: formata 'YYYY-MM-DD' em 'dd/mm/aaaa' (ou usa a data atual)
+function fmtDataSolic(data){
+  if(!data) return new Date().toLocaleDateString('pt-BR');
+  if(/^\d{4}-\d{2}-\d{2}$/.test(data)){
+    const [y,m,d]=data.split('-'); return `${d}/${m}/${y}`;
+  }
+  return data;
+}
+
 /* ========= Config ========= */
 const LS = { PARTS:'sp_parts_v3', TECHS:'sp_techs_v3', ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', THEME:'sp_theme', MODO:'sp_modo_integracao' };
 const API_SAVE = 'COLE_AQUI_URL_DO_FLOW_SALVAR';
@@ -276,12 +285,10 @@ const tecnicosBase={
 
 /* ========= Datalists ========= */
 function preencherListas(){
-  // Técnicos ordenados
   const dlT=$('#tecnicos'); dlT.innerHTML='';
   Object.keys(tecnicosBase).sort(collator.compare).forEach(n=>{
     const o=document.createElement('option'); o.value=n; dlT.appendChild(o);
   });
-  // Datalist de peças (mantido também, além do autocomplete novo)
   const dlP=$('#pecas'); dlP.innerHTML='';
   itensBase.forEach(p=>{
     const o=document.createElement('option');
@@ -348,7 +355,6 @@ function wireIdValidation(input){
 
 /* ========= AUTOCOMPLETE de peças ========= */
 function makeSuggestUI(input, rowRef){
-  // wrapper pra posicionar corretamente
   const wrap=document.createElement('div');
   wrap.className='suggest-wrap';
   input.parentElement.insertBefore(wrap, input);
@@ -378,7 +384,6 @@ function makeSuggestUI(input, rowRef){
 
   const choose=(idx)=>{
     const p=results[idx]; if(!p) return;
-    // Preenche os campos do row
     const tr=rowRef.closest('tr');
     tr.querySelector('.codigo').value=p.codigo;
     tr.querySelector('.desc').value=p.descricao;
@@ -439,7 +444,6 @@ function addRow(pref={}){
   iCod.addEventListener('change',()=>{ const it=findItem(iCod.value); if(it) fillRowFromItem(tr,it); });
   iDesc.addEventListener('change',()=>{ const it=findItem(iDesc.value); if(it) fillRowFromItem(tr,it); });
 
-  // AUTOCOMPLETE inteligente na descrição
   makeSuggestUI(iDesc, iDesc);
 
   iQtd.addEventListener('input',()=>{ iQtd.value = clamp(iQtd.value,1,9999); calcTotal(); });
@@ -517,20 +521,27 @@ function makeStatusSelect(value, disabled=false){
 
 /* ========= Exports ========= */
 function orderToAOA(o){
-  const head=['Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'];
+  const dataSolic = fmtDataSolic(o.data);
+  const head=['Data da Solicitação','Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'];
   const rows=(o.itens||[]).map(it=>[
-    it.codigo||'',(it.idMaquina||'').toUpperCase(),it.qtd,it.descricao,it.valor,(it.qtd*it.valor)
+    dataSolic,
+    it.codigo||'',
+    (it.idMaquina||'').toUpperCase(),
+    it.qtd,
+    it.descricao,
+    Number(it.valor||0),
+    Number(it.qtd*it.valor||0)
   ]);
   return [head,...rows];
 }
 function exportXLSXFrom(o){
   const wb=XLSX.utils.book_new();
   const ws1=XLSX.utils.aoa_to_sheet(orderToAOA(o));
-  ws1['!cols']=[{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
+  ws1['!cols']=[{wch:18},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Itens');
 
   const ws2=XLSX.utils.aoa_to_sheet([
-    ['Número',o.numero],['Data',o.data],['Técnico',o.tecnico],
+    ['Número',o.numero],['Data',fmtDataSolic(o.data)],['Técnico',o.tecnico],
     ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
     ['Município/UF',`${o.municipio||''} - ${o.uf||''}`],
     ['CEP',o.cep||''],['Observações',o.obs||'-'],
@@ -553,7 +564,7 @@ async function baixarPDFFrom(o){
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
   let y = M + 24;
   doc.text(`Número: ${o.numero||'-'}`, M, y);
-  doc.text(`Data: ${o.data||'-'}`, M + 260, y);
+  doc.text(`Data: ${fmtDataSolic(o.data)||'-'}`, M + 260, y);
   y += 14;
   doc.text(`Técnico: ${o.tecnico||'-'}`, M, y); y += 14;
   doc.text(`Endereço: ${(o.endereco||'-')}, ${(o.bairro||'')}`, M, y); y += 14;
@@ -722,7 +733,7 @@ function abrirLocal(num){
 
 /* ========= Excel/PDF do formulário atual ========= */
 function getOrder(){ const it=collectItems(), c=calcTotal(); return {
-  numero:$('#req-num').value, data:new Date().toLocaleDateString('pt-BR'),
+  numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
   tecnico:$('#tecnico').value, endereco:$('#endereco').value, bairro:$('#bairro').value,
   municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value, obs:$('#obs').value,
   itens:it, subtotal:c.subtotal, total:c.total, descPerc:c.descPerc, frete:c.frete
@@ -927,8 +938,3 @@ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded
 </script>
 </body>
 </html>
-
-
-
-
-
