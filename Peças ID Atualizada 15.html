@@ -184,27 +184,47 @@ select.status.status-conc{background:var(--ok)}
     </div>
   </section>
 
+  <!-- HISTÓRICO COM SELEÇÃO E EXCLUSÃO -->
   <section class="card" id="hist" style="display:none">
     <h2>📚 Históricos</h2>
 
-    <!-- Filtros -->
-    <div class="hist-filtros">
-      <input id="f-num" placeholder="Filtrar por Nº">
-      <input id="f-data" type="date" placeholder="Data">
-      <input id="f-tec" placeholder="Técnico">
-      <select id="f-status">
-        <option value="">Status (todos)</option>
-        <option>Em andamento</option>
-        <option>Parcial</option>
-        <option>Concluído</option>
-      </select>
-      <button id="f-limpar">Limpar</button>
+    <!-- Filtros + ações -->
+    <div class="hist-filtros" style="align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+        <input id="f-num" placeholder="Filtrar por Nº">
+        <input id="f-data" type="date" placeholder="Data">
+        <input id="f-tec" placeholder="Técnico">
+        <select id="f-status">
+          <option value="">Status (todos)</option>
+          <option>Em andamento</option>
+          <option>Parcial</option>
+          <option>Concluído</option>
+        </select>
+        <button id="f-limpar">Limpar</button>
+      </div>
+
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="hist-del" class="btn-danger" title="Excluir pedidos selecionados">🗑️ Excluir selecionados</button>
+      </div>
     </div>
 
     <div class="hist-empty" id="hist-empty" style="display:none">Sem registros para os filtros atuais.</div>
 
     <table id="tabela-hist">
-      <thead><tr><th>Nº</th><th>Data</th><th>Técnico</th><th>Itens</th><th>Total</th><th>Status</th><th>Ações</th></tr></thead>
+      <thead>
+        <tr>
+          <th style="width:36px; text-align:center">
+            <input id="hist-select-all" type="checkbox" title="Selecionar todos">
+          </th>
+          <th>Nº</th>
+          <th>Data</th>
+          <th>Técnico</th>
+          <th>Itens</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   </section>
@@ -237,7 +257,7 @@ const toast = (m,ms=2200)=>{const t=$('#toast');t.textContent=m;t.classList.add(
 const clamp = (v,min,max)=>Math.min(max,Math.max(min,v||0));
 const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
 
-// ✅ NOVO: formata 'YYYY-MM-DD' em 'dd/mm/aaaa' (ou usa a data atual)
+// NOVO: formata 'YYYY-MM-DD' em 'dd/mm/aaaa'
 function fmtDataSolic(data){
   if(!data) return new Date().toLocaleDateString('pt-BR');
   if(/^\d{4}-\d{2}-\d{2}$/.test(data)){
@@ -257,7 +277,7 @@ const setModo = m => { localStorage.setItem(LS.MODO,m); $('#badge-modo').textCon
 /* ========= Peças (base) ========= */
 const itensBase=[{"codigo":"CS001","descricao":"Termostato Do Tanque","valor":269.7},{"codigo":"CS002","descricao":"Termostato Do Boiler","valor":901},{"codigo":"CS003","descricao":"Mangueira De Agua Quente","valor":107.35},{"codigo":"CS004","descricao":"Placa De Comando","valor":6307},{"codigo":"CS005","descricao":"Válvula De Agua","valor":159},{"codigo":"CS006","descricao":"Pressostato De Nível","valor":606.8},{"codigo":"CS007","descricao":"Mangueira De Borracha","valor":78.65},{"codigo":"CS008","descricao":"Sensor de Porta (Fim de Curso)","valor":108.45},{"codigo":"CS009","descricao":"Sensor De Nível","valor":606.74},{"codigo":"CS010","descricao":"Tampão Do Dreno Hd-80","valor":183.6},{"codigo":"CS011","descricao":"Tampão Do Dreno Hd-50","valor":119.06},{"codigo":"CS012","descricao":"Disjuntor 10A","valor":256.8},{"codigo":"CS013","descricao":"Rondana Da Porta","valor":70},{"codigo":"CS014","descricao":"Resistencia Do Tanque Com Flange Hd50","valor":1017.6},{"codigo":"CS015","descricao":"Resistencia Do Tanque Com Flange Hd80","valor":1023},{"codigo":"CS016","descricao":"Flange Braço Inferior/Superior","valor":890.4},{"codigo":"CS017","descricao":"Etiqueta Painel","valor":69},{"codigo":"CS018","descricao":"Relé De Proteção","valor":404.5},{"codigo":"CS019","descricao":"Cabo De Aço Da Porta","valor":25},{"codigo":"CS020","descricao":"Mola Da Porta","valor":75},{"codigo":"CS021","descricao":"Contatora","valor":327.8},{"codigo":"CS022","descricao":"Fonte Chaveada 3A","valor":130.9},{"codigo":"CS023","descricao":"Sensor Temperatura","valor":254.4},{"codigo":"CS024","descricao":"Resistências Boiler Com Flange Hd80","valor":1484},{"codigo":"CS025","descricao":"Resistências Boiler Com Flange Hd50","valor":1272},{"codigo":"CS026","descricao":"Bico Injetor","valor":114.48},{"codigo":"CS027","descricao":"Base Braço De Lavagem HD-50","valor":1078.66},{"codigo":"CS028","descricao":"Braço De Lavagem HD-50","valor":1900.96},{"codigo":"CS029","descricao":"Base Braço De Lavagem HD-80","valor":1078.66},{"codigo":"CS030","descricao":"Braço De Lavagem HD-80","valor":1900.96},{"codigo":"CS031","descricao":"Flauta De Enxague (Com bicos e conexão)","valor":971.66},{"codigo":"CS032","descricao":"Boiler Hd-50","valor":2033},{"codigo":"CS033","descricao":"Boiler Hd-80","valor":2354},{"codigo":"CS034","descricao":"Suporte Do Rack","valor":1123.6},{"codigo":"CS035","descricao":"Tela De Filtro De Resíduo Direito","valor":337.61},{"codigo":"CS036","descricao":"Tela De Filtro De Resíduo Esquerdo","valor":337.61},{"codigo":"CS037","descricao":"Painel Ihm","valor":1587.88},{"codigo":"CS038","descricao":"Adaptador De Braço","valor":321},{"codigo":"CS039","descricao":"Flange Superior Braço","valor":742},{"codigo":"CS040","descricao":"Flange Inferior Braço","valor":742},{"codigo":"CS041","descricao":"Tampa Unikit D","valor":65.48},{"codigo":"CS042","descricao":"Tampa Unikit S","valor":65.48},{"codigo":"CS043","descricao":"Kit (Molas, Roldanas, Cabo De Porta)","valor":165.6},{"codigo":"CS044","descricao":"Resistencia NT-300","valor":1696},{"codigo":"CS045","descricao":"Resistencia do TQ HDW-200","valor":1346.73},{"codigo":"CS046","descricao":"Resistencia do booster HDW-200","valor":1696},{"codigo":"CS047","descricao":"Valvula solenoide 220v 3/4\"","valor":168.48},{"codigo":"CS048","descricao":"Pressostato HDW-200","valor":453.68},{"codigo":"CS049","descricao":"Conjunto de cesto de residuo NT-300","valor":1123.05},{"codigo":"CS050","descricao":"kit Racks","valor":1506.6},{"codigo":"CS051","descricao":"Fim de curso HDW-200 ( Completo)","valor":2175.5},{"codigo":"CS052","descricao":"Fim de curso HDW-200","valor":789.21},{"codigo":"CS053","descricao":"BUCHAS DO BRAÇO GIRATORIO","valor":110},{"codigo":"CS054","descricao":"Etiqueta Painel NT","valor":545.9},{"codigo":"CS055","descricao":"Disjuntor 80A","valor":313.2},{"codigo":"CS056","descricao":"Cabo PP 5x 25mm (3MTS)","valor":848},{"codigo":"CS057","descricao":"Oring Resistencia boiler","valor":110},{"codigo":"CS058","descricao":"Roldana HD-80","valor":163.5},{"codigo":"CS059","descricao":"Chave do braço","valor":163.5},{"codigo":"CS060","descricao":"Disjuntor 125A","valor":1776.85},{"codigo":"CS061","descricao":"Bico enxague","valor":134.5},{"codigo":"CS062","descricao":"Chicote NR12","valor":3210},{"codigo":"CS063","descricao":"Mang Silicone","valor":173.88},{"codigo":"CS064","descricao":"Anel Elast Inox","valor":8.74},{"codigo":"CS065","descricao":"Valvula Solenoide HDW-200 NT","valor":172.5},{"codigo":"CS066","descricao":"Sonda Temperatura","valor":320.51},{"codigo":"CS067","descricao":"Conj Termostato","valor":886.72}];
 
-/* ========= Técnicos (com Eduardo Martins) ========= */
+/* ========= Técnicos ========= */
 const tecnicosBase={
   "Ney Goncalves Cardoso":{"endereco":"Rua Juqueri,266","bairro":"Irajá","cep":"21.371-370","municipio":"Rio de Janeiro","uf":"RJ"},
   "Welington Bastos Tavares":{"endereco":"AV Morumbi Qd 34 Lt 11","bairro":"Vila Mariana","cep":"75.134-550","municipio":"Anápolis","uf":"GO"},
@@ -328,7 +348,7 @@ function fillRowFromItem(tr,item){
   calcTotal();
 }
 
-/* ========= ID Máquina (obrigatório) ========= */
+/* ========= ID Máquina ========= */
 function normalizeId(value){
   if(!value) return '';
   let v = String(value).toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-');
@@ -519,6 +539,81 @@ function makeStatusSelect(value, disabled=false){
   return sel;
 }
 
+/* ========= Seleção & Exclusão (Histórico) ========= */
+function getHistoricoSelecionados(){
+  return [...document.querySelectorAll('#tabela-hist tbody input.hist-select:checked')]
+    .map(chk => chk.value)
+    .filter(Boolean);
+}
+function excluirSelecionadosLocal(){
+  const numeros = getHistoricoSelecionados();
+  if(!numeros.length){ toast('Nenhum pedido selecionado'); return; }
+  const ok = confirm(`Excluir ${numeros.length} pedido(s) do histórico LOCAL? Esta ação não pode ser desfeita.`);
+  if(!ok) return;
+
+  let lista = JSON.parse(localStorage.getItem(LS.ORD) || '[]');
+  const antes = lista.length;
+  lista = lista.filter(o => !numeros.includes(o.numero));
+  localStorage.setItem(LS.ORD, JSON.stringify(lista));
+
+  const cur = JSON.parse(localStorage.getItem(LS.CUR) || 'null');
+  if(cur && numeros.includes(cur.numero)){
+    localStorage.removeItem(LS.CUR);
+  }
+
+  toast(`Removido(s): ${antes - lista.length}`);
+  montarHistoricoLocal();
+}
+function bindSelectAll(){
+  const master = document.getElementById('hist-select-all');
+  if(!master) return;
+  master.addEventListener('change', ()=>{
+    document.querySelectorAll('#tabela-hist tbody input.hist-select')
+      .forEach(chk => { chk.checked = master.checked; });
+  });
+}
+
+/* ========= Filtros (independente de posições) ========= */
+function aplicaFiltrosLinhas(rows){
+  const fnum  = ($('#f-num').value||'').trim().toLowerCase();
+  const fdata = ($('#f-data').value||'').trim();
+  const ftec  = ($('#f-tec').value||'').trim().toLowerCase();
+  const fstat = ($('#f-status').value||'').trim();
+
+  rows.forEach(tr=>{
+    const numEl = tr.querySelector('.td-num');
+    const datEl = tr.querySelector('.td-data');
+    const tecEl = tr.querySelector('.td-tec');
+    const sel   = tr.querySelector('select.status');
+
+    const num = (numEl?.textContent||'').toLowerCase();
+    const dat = (datEl?.textContent||'').trim();
+    const tec = (tecEl?.textContent||'').toLowerCase();
+    const st  = sel ? sel.value : '';
+
+    const ok =
+      (!fnum  || num.includes(fnum)) &&
+      (!fdata || dat===fdata) &&
+      (!ftec  || tec.includes(ftec)) &&
+      (!fstat || st===fstat);
+
+    tr.style.display = ok ? '' : 'none';
+  });
+
+  const anyVisible = [...rows].some(tr=>tr.style.display!=='none');
+  $('#hist-empty').style.display = anyVisible ? 'none' : 'block';
+}
+function bindFiltros(){
+  ['#f-num','#f-data','#f-tec','#f-status'].forEach(id=>{
+    $(id).addEventListener('input',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
+    $(id).addEventListener('change',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
+  });
+  $('#f-limpar').addEventListener('click',()=>{
+    $('#f-num').value=''; $('#f-data').value=''; $('#f-tec').value=''; $('#f-status').value='';
+    aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
+  });
+}
+
 /* ========= Exports ========= */
 function orderToAOA(o){
   const dataSolic = fmtDataSolic(o.data);
@@ -642,49 +737,32 @@ function updateStatusLocal(numero, novo){
   return true;
 }
 
-/* ========= Histórico (LOCAL) + filtros ========= */
-function aplicaFiltrosLinhas(rows){
-  const fnum = ($('#f-num').value||'').trim().toLowerCase();
-  const fdata = ($('#f-data').value||'').trim();
-  const ftec = ($('#f-tec').value||'').trim().toLowerCase();
-  const fstat = ($('#f-status').value||'').trim();
-
-  rows.forEach(tr=>{
-    const c = tr.children;
-    const num = (c[0].textContent||'').toLowerCase();
-    const dat = (c[1].textContent||'').trim();
-    const tec = (c[2].textContent||'').toLowerCase();
-    const sel = tr.querySelector('select.status');
-    const st  = sel ? sel.value : '';
-
-    const ok =
-      (!fnum || num.includes(fnum)) &&
-      (!fdata || dat===fdata) &&
-      (!ftec || tec.includes(ftec)) &&
-      (!fstat || st===fstat);
-
-    tr.style.display = ok ? '' : 'none';
-  });
-
-  const anyVisible = [...rows].some(tr=>tr.style.display!=='none');
-  $('#hist-empty').style.display = anyVisible ? 'none' : 'block';
-}
-function bindFiltros(){
-  ['#f-num','#f-data','#f-tec','#f-status'].forEach(id=>{
-    $(id).addEventListener('input',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
-    $(id).addEventListener('change',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
-  });
-  $('#f-limpar').addEventListener('click',()=>{
-    $('#f-num').value=''; $('#f-data').value=''; $('#f-tec').value=''; $('#f-status').value='';
-    aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
-  });
-}
+/* ========= Histórico (LOCAL) ========= */
 function montarHistoricoLocal(){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
   const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   $('#hist').style.display=lista.length?'block':'none';
+
   for(const o of lista){
     const tr=document.createElement('tr');
+
+    // Checkbox seleção
+    const tdSel = document.createElement('td');
+    tdSel.style.textAlign = 'center';
+    tdSel.innerHTML = `<input type="checkbox" class="hist-select" value="${o.numero}" title="Selecionar ${o.numero}">`;
+    tr.appendChild(tdSel);
+
+    const tdNum  = document.createElement('td'); tdNum.className='td-num';  tdNum.textContent = o.numero;
+    const tdData = document.createElement('td'); tdData.className='td-data'; tdData.textContent = o.data;
+    const tdTec  = document.createElement('td'); tdTec.className='td-tec';  tdTec.textContent  = o.tecnico || '-';
+    const tdItens= document.createElement('td'); tdItens.textContent = o.itens?.length || 0;
+    const tdTot  = document.createElement('td'); tdTot.textContent   = BRL(o.total||0);
+
+    tr.appendChild(tdNum);
+    tr.appendChild(tdData);
+    tr.appendChild(tdTec);
+    tr.appendChild(tdItens);
+    tr.appendChild(tdTot);
 
     const sel=makeStatusSelect(o.status||'Em andamento', false);
     sel.addEventListener('change',()=>{
@@ -697,8 +775,6 @@ function montarHistoricoLocal(){
       toast('Status atualizado: '+sel.value);
     });
     const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
-
-    tr.innerHTML=`<td>${o.numero}</td><td>${o.data}</td><td>${o.tecnico}</td><td>${o.itens?.length||0}</td><td>${BRL(o.total||0)}</td>`;
     tr.appendChild(tdStatus);
 
     const tdAcoes=document.createElement('td');
@@ -715,6 +791,8 @@ function montarHistoricoLocal(){
 
     tb.appendChild(tr);
   }
+
+  bindSelectAll();
   bindFiltros();
   aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
 }
@@ -741,7 +819,7 @@ function getOrder(){ const it=collectItems(), c=calcTotal(); return {
 function exportXLSX(){ exportXLSXFrom(getOrder()); }
 async function baixarPDF(){ await baixarPDFFrom(getOrder()); }
 
-/* ========= Flow (opcional) ========= */
+/* ========= GLOBAL (Flow) ========= */
 async function listarGlobalExcel(){
   if(!API_LIST || API_LIST.startsWith('COLE_AQUI')) throw new Error('API_LIST não configurada');
   const r=await fetch(API_LIST); if(!r.ok) throw new Error('Falha ao listar no Flow');
@@ -798,6 +876,16 @@ function boot(){
     if(ok){ novaSolicitacao(); }
   });
 
+  // Botão Excluir selecionados
+  document.getElementById('hist-del').addEventListener('click', ()=>{
+    if(getModo()==='global'){
+      toast('Exclusão no modo GLOBAL não está implementada.');
+      return;
+    }
+    excluirSelecionadosLocal();
+  });
+
+  // Botão Históricos
   $('#btn-hist').addEventListener('click',async()=>{
     const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
     if(getModo()==='global'){
@@ -807,6 +895,24 @@ function boot(){
         hist.style.display='block';
         for(const o of lista){
           const tr=document.createElement('tr');
+
+          // Checkbox (somente seleção visual; exclusão global não implementada)
+          const tdSel = document.createElement('td');
+          tdSel.style.textAlign='center';
+          tdSel.innerHTML = `<input type="checkbox" class="hist-select" value="${o.numero}" title="Selecionar ${o.numero}">`;
+          tr.appendChild(tdSel);
+
+          const tdNum  = document.createElement('td'); tdNum.className='td-num';  tdNum.textContent = o.numero;
+          const tdData = document.createElement('td'); tdData.className='td-data'; tdData.textContent = o.data;
+          const tdTec  = document.createElement('td'); tdTec.className='td-tec';  tdTec.textContent  = o.tecnico || '-';
+          const tdItens= document.createElement('td'); tdItens.textContent = o.itens?.length || 0;
+          const tdTot  = document.createElement('td'); tdTot.textContent   = BRL(o.total||0);
+
+          tr.appendChild(tdNum);
+          tr.appendChild(tdData);
+          tr.appendChild(tdTec);
+          tr.appendChild(tdItens);
+          tr.appendChild(tdTot);
 
           const sel=makeStatusSelect(o.status||'Em andamento', false);
           sel.addEventListener('change', async ()=>{
@@ -827,8 +933,6 @@ function boot(){
             }
           });
           const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
-
-          tr.innerHTML=`<td>${o.numero}</td><td>${o.data}</td><td>${o.tecnico||'-'}</td><td>${o.itens?.length||0}</td><td>${BRL(o.total||0)}</td>`;
           tr.appendChild(tdStatus);
 
           const tdA=document.createElement('td');
@@ -843,6 +947,7 @@ function boot(){
           tbody.appendChild(tr);
         }
         hist.style.display='block';
+        bindSelectAll();
         bindFiltros();
         aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
       }catch(e){ console.error(e); toast('Erro no Excel — mostrando LOCAL'); montarHistoricoLocal(); }
