@@ -88,7 +88,7 @@ select.status.flow-ent{background:var(--ok)}        /* Entregue */
 
 /* Ações do histórico alinhadas à direita (Excel/PDF lado a lado) */
 #tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end}
-.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text')}
+.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)} /* corrigido */
 
 /* === AUTOCOMPLETE de Peças === */
 .suggest-wrap{position:relative}
@@ -180,14 +180,15 @@ select.status.flow-ent{background:var(--ok)}        /* Entregue */
 
   <section class="card">
     <div class="toolbar">
-      <button id="btn-hist" type="button">📚 Históricos</button>
+      <button id="btn-hist" type="button">📚 Mostrar Histórico</button>
+      <button id="btn-ocultar-hist" type="button">🙈 Ocultar Histórico</button>
       <button id="btn-nova" type="button">🆕 Nova Solicitação</button>
     </div>
   </section>
 
   <!-- HISTÓRICO COM SELEÇÃO E EXCLUSÃO -->
   <section class="card" id="hist" style="display:none">
-    <h2>📚 Históricos</h2>
+    <h2>📚 Mostrar Histórico</h2>
 
     <div class="hist-filtros" style="align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
@@ -815,9 +816,18 @@ async function listarGlobalExcel(){
   const j=await r.json(); if(!j.success) throw new Error('Resposta inválida do Flow');
   const rows=j.rows||[];
   return rows.map(r=>({
-    numero:r.Numero,data:r.Data,tecnico:r.Tecnico,endereco:r.Endereco,bairro:r.Bairro,
-    municipio:r.Municipio,uf:r.UF,cep:r.CEP,subtotal:Number(r.Subtotal||0),descPerc:Number(r.Desconto||0),
-    frete:Number(r.Frete||0),total:Number(r.Total||0),
+    numero:r.Numero,
+    data:r.Data,
+    tecnico:r.Tecnico,
+    endereco:r.Endereco,
+    bairro:r.Bairro,
+    municipio:r.Municipio,
+    uf:r.UF,
+    cep:r.CEP,
+    subtotal:Number(r.Subtotal||0),
+    descPerc:Number(r.Desconto||0),
+    frete:Number(r.Frete||0),
+    total:Number(r.Total||0),            // ✅ corrigido: agora com dois pontos
     status:r.Status||'Supervisor Diversey',
     itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
   }));
@@ -873,6 +883,7 @@ function boot(){
     excluirSelecionadosLocal();
   });
 
+  // ➜ Mostrar Histórico
   $('#btn-hist').addEventListener('click',async()=>{
     const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
     if(getModo()==='global'){
@@ -940,6 +951,12 @@ function boot(){
     } else {
       montarHistoricoLocal();
     }
+  });
+
+  // ➜ Ocultar Histórico
+  $('#btn-ocultar-hist').addEventListener('click',()=>{
+    $('#hist').style.display='none';
+    toast('Histórico ocultado');
   });
 
   $('#btn-nova').addEventListener('click',()=>{ const ok = salvarLocal(); if(ok){ novaSolicitacao(); } });
