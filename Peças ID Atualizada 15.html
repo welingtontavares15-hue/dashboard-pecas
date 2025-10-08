@@ -14,11 +14,14 @@
 <style>
 :root{
   --bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--accent:#3b82f6;
-  --ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--border:#334155;--shadow:0 4px 20px rgba(0,0,0,.2)
+  --ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--border:#334155;--shadow:0 4px 20px rgba(0,0,0,.2);
+  --info:#06b6d4; /* ciano para Fornecedor */
+  --step:#8b5cf6; /* violeta para Rota */
 }
 :root.light{
   --bg:#eef8f1; --card:#ffffff; --text:#111827; --muted:#475569; --accent:#2563eb;
-  --ok:#16a34a; --warn:#d97706; --danger:#b91c1c; --border:#cbd5e1; --shadow:0 2px 10px rgba(0,0,0,.08)
+  --ok:#16a34a; --warn:#d97706; --danger:#b91c1c; --border:#cbd5e1; --shadow:0 2px 10px rgba(0,0,0,.08);
+  --info:#0891b2; --step:#7c3aed;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -53,11 +56,10 @@ tr:hover{background:rgba(255,255,255,.04)}
 td input, td select{width:100%}
 .total-box{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;font-weight:600}
 .total-box input{width:120px;text-align:right}
-.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;z-index:50}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:50}
 .toast.show{display:block}
 
-/* validação & auditoria */
-input.idmaq.invalid{border-color:var(--danger); box-shadow:0 0 0 3px rgba(239,68,68,.2)}
+/* validação & auditoria (somente para outros campos) */
 tr.row-error{outline:2px solid var(--danger); background:rgba(239,68,68,.08)}
 .small-hint{color:var(--muted); font-size:12px; margin-top:6px}
 kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-size:12px}
@@ -72,12 +74,12 @@ kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;bord
 .modal .muted{color:var(--muted);font-size:12px}
 .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 
-/* === STATUS: cor só no SELECT === */
-select.status{width:auto;min-width:140px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
-select.status.status-and{background:var(--warn)}
-select.status.status-parc{background:var(--danger)}
-select.status.status-conc{background:var(--ok)}
-.row-status-and,.row-status-parc,.row-status-conc{background:transparent !important}
+/* === FLUXO (cores no SELECT) === */
+select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
+select.status.flow-sup{background:var(--warn)}      /* Supervisor Diversey */
+select.status.flow-forn{background:var(--info)}     /* Fornecedor */
+select.status.flow-rota{background:var(--step)}     /* Rota de Entrega */
+select.status.flow-ent{background:var(--ok)}        /* Entregue */
 
 /* filtros do histórico */
 .hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
@@ -115,7 +117,6 @@ select.status.status-conc{background:var(--ok)}
     <button id="btn-modo-global">☁️ Global</button>
     <button id="btn-theme">🌗 Tema</button>
     <button id="btn-auditar">🩺 Checar Consistência</button>
-    <!-- Excel e PDF neutros (sem cor) -->
     <button id="btn-xlsx">📊 Excel</button>
     <button id="btn-pdf">📄 PDF</button>
     <button id="btn-enviar" class="btn-ok">🚀 Enviar (Flow)</button>
@@ -188,17 +189,17 @@ select.status.status-conc{background:var(--ok)}
   <section class="card" id="hist" style="display:none">
     <h2>📚 Históricos</h2>
 
-    <!-- Filtros + ações -->
     <div class="hist-filtros" style="align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="f-num" placeholder="Filtrar por Nº">
         <input id="f-data" type="date" placeholder="Data">
         <input id="f-tec" placeholder="Técnico">
         <select id="f-status">
-          <option value="">Status (todos)</option>
-          <option>Em andamento</option>
-          <option>Parcial</option>
-          <option>Concluído</option>
+          <option value="">Fluxo (todos)</option>
+          <option>Supervisor Diversey</option>
+          <option>Fornecedor</option>
+          <option>Rota de Entrega</option>
+          <option>Entregue</option>
         </select>
         <button id="f-limpar">Limpar</button>
       </div>
@@ -221,7 +222,7 @@ select.status.status-conc{background:var(--ok)}
           <th>Técnico</th>
           <th>Itens</th>
           <th>Total</th>
-          <th>Status</th>
+          <th>Fluxo</th>
           <th>Ações</th>
         </tr>
       </thead>
@@ -257,10 +258,9 @@ const toast = (m,ms=2200)=>{const t=$('#toast');t.textContent=m;t.classList.add(
 const clamp = (v,min,max)=>Math.min(max,Math.max(min,v||0));
 const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
 
-// NOVO: formata 'YYYY-MM-DD' em 'dd/mm/aaaa'
 function fmtDataSolic(data){
   if(!data) return new Date().toLocaleDateString('pt-BR');
-  if(/^\d{4}-\d{2}-\d{2}$/.test(data)){
+  if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data)){
     const [y,m,d]=data.split('-'); return `${d}/${m}/${y}`;
   }
   return data;
@@ -348,29 +348,13 @@ function fillRowFromItem(tr,item){
   calcTotal();
 }
 
-/* ========= ID Máquina ========= */
-function normalizeId(value){
-  if(!value) return '';
-  let v = String(value).toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9-]/g,'').replace(/-+/g,'-');
-  return v;
-}
-function isIdValid(v){
-  if(!v) return false;
-  const base = /^[A-Z0-9-]{6,}$/;
-  const recomendado = /^[A-Z0-9-]+-\d{3}$/;
-  return recomendado.test(v) || base.test(v);
-}
+/* ========= ID Máquina (sem bloqueio) ========= */
+function normalizeId(value){ return String(value ?? '').trim(); }
 function wireIdValidation(input){
-  const run = ()=>{
-    const nv = normalizeId(input.value);
-    if(input.value!==nv) input.value = nv;
-    if(!nv || !isIdValid(nv)) input.classList.add('invalid'); else input.classList.remove('invalid');
-  };
-  input.addEventListener('input',run);
+  const run = ()=>{ input.value = normalizeId(input.value); };
   input.addEventListener('change',run);
   input.addEventListener('blur',run);
-  input.title = 'ID Máquina (MAIÚSCULO). Ex.: HLHDW8017HL2091-027';
-  run();
+  input.title = 'ID da Máquina — qualquer formato é aceito.';
 }
 
 /* ========= AUTOCOMPLETE de peças ========= */
@@ -447,7 +431,7 @@ function addRow(pref={}){
   tr.innerHTML=`
     <td><input list="pecas" class="codigo" placeholder="CS001" value="${pref.codigo||''}"></td>
     <td><input class="desc" placeholder="Digite nome/código da peça" value="${pref.descricao||''}"></td>
-    <td><input class="idmaq" placeholder="Ex.: HLHDW8017HL2091-027" value="${(pref.idMaquina||pref.idmaq||'').toString().toUpperCase()}"></td>
+    <td><input class="idmaq" placeholder="Ex.: 38925 ou HLHDW8017HL2091-027" value="${normalizeId(pref.idMaquina||pref.idmaq||'')}"></td>
     <td><input type="number" class="qtd" min="1" value="${clamp(pref.qtd,1,9999)||1}"></td>
     <td><input type="number" class="valor" step="0.01" min="0" value="${Math.max(0,Number(pref.valor||0))||''}"></td>
     <td class="sub">R$ 0,00</td>
@@ -480,7 +464,7 @@ function collectItems(){
   $$('#tabela-itens tbody tr').forEach(tr=>{
     const codigo=tr.querySelector('.codigo').value.trim().toUpperCase();
     const descricao=tr.querySelector('.desc').value.trim();
-    const idMaquina=normalizeId((tr.querySelector('.idmaq').value||'').trim());
+    const idMaquina=normalizeId((tr.querySelector('.idmaq').value||''));
     const qtd=clamp(parseFloat(tr.querySelector('.qtd').value),1,9999);
     const valor=Math.max(0, parseFloat(tr.querySelector('.valor').value)||0);
     if(descricao && qtd>0){ itens.push({codigo,descricao,idMaquina,qtd,valor,subtotal:qtd*valor}); }
@@ -505,6 +489,31 @@ function calcTotal(){
   return {subtotal,total,descPerc:desc,frete};
 }
 
+/* ========= Fluxo ========= */
+const FLUXO = ['Supervisor Diversey','Fornecedor','Rota de Entrega','Entregue'];
+function applyFlowStyle(selectEl, value){
+  selectEl.classList.remove('flow-sup','flow-forn','flow-rota','flow-ent');
+  if(value==='Supervisor Diversey') selectEl.classList.add('flow-sup');
+  else if(value==='Fornecedor')     selectEl.classList.add('flow-forn');
+  else if(value==='Rota de Entrega')selectEl.classList.add('flow-rota');
+  else if(value==='Entregue')       selectEl.classList.add('flow-ent');
+  else selectEl.classList.add('flow-sup');
+}
+function makeFlowSelect(value, disabled=false){
+  const sel=document.createElement('select');
+  sel.className='status';
+  sel.disabled = disabled;
+  FLUXO.forEach(st=>{
+    const opt=document.createElement('option');
+    opt.value=st; opt.textContent=st;
+    if(st===value) opt.selected=true;
+    sel.appendChild(opt);
+  });
+  applyFlowStyle(sel, value||'Supervisor Diversey');
+  sel.addEventListener('change',()=>applyFlowStyle(sel, sel.value));
+  return sel;
+}
+
 /* ========= Sequência ========= */
 function gerarNumero(){
   const d=new Date();
@@ -514,29 +523,6 @@ function gerarNumero(){
   const numero=`REQ-${key}-${String(seq.counter).padStart(4,'0')}`;
   $('#req-num').value=numero;
   seq.counter++; localStorage.setItem(LS.SEQ, JSON.stringify(seq));
-}
-
-/* ========= Status ========= */
-const STATUS = ['Em andamento','Parcial','Concluído'];
-function applyStatusStyle(selectEl, value){
-  selectEl.classList.remove('status-and','status-parc','status-conc');
-  if(value==='Concluído') selectEl.classList.add('status-conc');
-  else if(value==='Parcial') selectEl.classList.add('status-parc');
-  else selectEl.classList.add('status-and');
-}
-function makeStatusSelect(value, disabled=false){
-  const sel=document.createElement('select');
-  sel.className='status';
-  sel.disabled = disabled;
-  STATUS.forEach(st=>{
-    const opt=document.createElement('option');
-    opt.value=st; opt.textContent=st;
-    if(st===value) opt.selected=true;
-    sel.appendChild(opt);
-  });
-  applyStatusStyle(sel, value||'Em andamento');
-  sel.addEventListener('change',()=>applyStatusStyle(sel, sel.value));
-  return sel;
 }
 
 /* ========= Seleção & Exclusão (Histórico) ========= */
@@ -573,7 +559,7 @@ function bindSelectAll(){
   });
 }
 
-/* ========= Filtros (independente de posições) ========= */
+/* ========= Filtros ========= */
 function aplicaFiltrosLinhas(rows){
   const fnum  = ($('#f-num').value||'').trim().toLowerCase();
   const fdata = ($('#f-data').value||'').trim();
@@ -617,11 +603,12 @@ function bindFiltros(){
 /* ========= Exports ========= */
 function orderToAOA(o){
   const dataSolic = fmtDataSolic(o.data);
-  const head=['Data da Solicitação','Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'];
+  const head=['Nº Solicitação','Data da Solicitação','Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'];
   const rows=(o.itens||[]).map(it=>[
+    o.numero || '',
     dataSolic,
     it.codigo||'',
-    (it.idMaquina||'').toUpperCase(),
+    (it.idMaquina||''),
     it.qtd,
     it.descricao,
     Number(it.valor||0),
@@ -632,7 +619,7 @@ function orderToAOA(o){
 function exportXLSXFrom(o){
   const wb=XLSX.utils.book_new();
   const ws1=XLSX.utils.aoa_to_sheet(orderToAOA(o));
-  ws1['!cols']=[{wch:18},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
+  ws1['!cols']=[{wch:22},{wch:18},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Itens');
 
   const ws2=XLSX.utils.aoa_to_sheet([
@@ -640,7 +627,8 @@ function exportXLSXFrom(o){
     ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
     ['Município/UF',`${o.municipio||''} - ${o.uf||''}`],
     ['CEP',o.cep||''],['Observações',o.obs||'-'],
-    ['Subtotal',o.subtotal||0],['Desconto (%)',o.descPerc||0],['Frete',o.frete||0],['TOTAL',o.total||0]
+    ['Subtotal',o.subtotal||0],['Desconto (%)',o.descPerc||0],['Frete',o.frete||0],['TOTAL',o.total||0],
+    ['Fluxo',o.status||'Supervisor Diversey']
   ]);
   ws2['!cols']=[{wch:18},{wch:60}];
   XLSX.utils.book_append_sheet(wb,ws2,'Resumo');
@@ -685,7 +673,7 @@ async function baixarPDFFrom(o){
     columnStyles: { 0:{cellWidth:COL_COD}, 1:{cellWidth:COL_ID}, 2:{cellWidth:COL_QTD, halign:'right'}, 3:{cellWidth:COL_DESC}, 4:{cellWidth:COL_VUNIT, halign:'right'}, 5:{cellWidth:COL_SUB, halign:'right'} },
     head: [['Código','ID Máquina','Qtd','Descrição','Valor Unit.','Subtotal']],
     body: (o.itens||[]).map(it=>[
-      it.codigo||'', (it.idMaquina||'').toUpperCase(), it.qtd, it.descricao, BRL(it.valor), BRL(it.qtd*it.valor)
+      it.codigo||'', (it.idMaquina||''), it.qtd, it.descricao, BRL(it.valor), BRL(it.qtd*it.valor)
     ]),
     pageBreak: 'auto'
   });
@@ -699,7 +687,8 @@ async function baixarPDFFrom(o){
     `Subtotal: ${BRL(o.subtotal||0)}`,
     `Desconto: ${(o.descPerc||0).toFixed(2)}% (${BRL((o.subtotal||0)*(Number(o.descPerc||0)/100))})`,
     `Frete: ${BRL(o.frete||0)}`,
-    `TOTAL: ${BRL(o.total||0)}`
+    `TOTAL: ${BRL(o.total||0)}`,
+    `Fluxo: ${o.status||'Supervisor Diversey'}`
   ].forEach(s => { doc.text(s, M, ly); ly += 14; });
 
   const blob = doc.output('blob');
@@ -712,13 +701,13 @@ async function baixarPDFFrom(o){
 function salvarLocal(){
   const tecnico=$('#tecnico').value; if(!tecnico){ toast('Selecione o técnico'); return false; }
   const itens=collectItems(); if(!itens.length){ toast('Inclua ao menos 1 item'); return false; }
-  if($$('.idmaq.invalid').length){ toast('Verifique os ID(s) de Máquina em vermelho'); return false; }
 
   const tot=calcTotal();
   const dados={
     numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
     tecnico, endereco:$('#endereco').value, bairro:$('#bairro').value, municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value,
-    obs:$('#obs').value, ...tot, itens, status:'Em andamento'
+    obs:$('#obs').value, ...tot, itens,
+    status:'Supervisor Diversey' // 🔰 inicia o fluxo automaticamente
   };
   const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   const i=lista.findIndex(o=>o.numero===dados.numero);
@@ -746,7 +735,6 @@ function montarHistoricoLocal(){
   for(const o of lista){
     const tr=document.createElement('tr');
 
-    // Checkbox seleção
     const tdSel = document.createElement('td');
     tdSel.style.textAlign = 'center';
     tdSel.innerHTML = `<input type="checkbox" class="hist-select" value="${o.numero}" title="Selecionar ${o.numero}">`;
@@ -764,15 +752,15 @@ function montarHistoricoLocal(){
     tr.appendChild(tdItens);
     tr.appendChild(tdTot);
 
-    const sel=makeStatusSelect(o.status||'Em andamento', false);
+    const sel=makeFlowSelect(o.status||'Supervisor Diversey', false);
     sel.addEventListener('change',()=>{
-      if(sel.value==='Concluído'){
-        const ok=confirm('Confirmar entrega do material para concluir?');
-        if(!ok){ sel.value=o.status||'Em andamento'; applyStatusStyle(sel, sel.value); return; }
+      if(sel.value==='Entregue'){
+        const ok=confirm('Confirmar entrega do material para marcar como "Entregue"?');
+        if(!ok){ sel.value=o.status||'Supervisor Diversey'; applyFlowStyle(sel, sel.value); return; }
       }
       updateStatusLocal(o.numero, sel.value);
       o.status=sel.value;
-      toast('Status atualizado: '+sel.value);
+      toast('Fluxo atualizado: '+sel.value);
     });
     const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
     tr.appendChild(tdStatus);
@@ -814,7 +802,8 @@ function getOrder(){ const it=collectItems(), c=calcTotal(); return {
   numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
   tecnico:$('#tecnico').value, endereco:$('#endereco').value, bairro:$('#bairro').value,
   municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value, obs:$('#obs').value,
-  itens:it, subtotal:c.subtotal, total:c.total, descPerc:c.descPerc, frete:c.frete
+  itens:it, subtotal:c.subtotal, total:c.total, descPerc:c.descPerc, frete:c.frete,
+  status:'Supervisor Diversey'
 };}
 function exportXLSX(){ exportXLSXFrom(getOrder()); }
 async function baixarPDF(){ await baixarPDFFrom(getOrder()); }
@@ -829,7 +818,7 @@ async function listarGlobalExcel(){
     numero:r.Numero,data:r.Data,tecnico:r.Tecnico,endereco:r.Endereco,bairro:r.Bairro,
     municipio:r.Municipio,uf:r.UF,cep:r.CEP,subtotal:Number(r.Subtotal||0),descPerc:Number(r.Desconto||0),
     frete:Number(r.Frete||0),total:Number(r.Total||0),
-    status:r.Status||'Em andamento',
+    status:r.Status||'Supervisor Diversey',
     itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
   }));
 }
@@ -876,7 +865,6 @@ function boot(){
     if(ok){ novaSolicitacao(); }
   });
 
-  // Botão Excluir selecionados
   document.getElementById('hist-del').addEventListener('click', ()=>{
     if(getModo()==='global'){
       toast('Exclusão no modo GLOBAL não está implementada.');
@@ -885,7 +873,6 @@ function boot(){
     excluirSelecionadosLocal();
   });
 
-  // Botão Históricos
   $('#btn-hist').addEventListener('click',async()=>{
     const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
     if(getModo()==='global'){
@@ -896,17 +883,16 @@ function boot(){
         for(const o of lista){
           const tr=document.createElement('tr');
 
-          // Checkbox (somente seleção visual; exclusão global não implementada)
           const tdSel = document.createElement('td');
           tdSel.style.textAlign='center';
           tdSel.innerHTML = `<input type="checkbox" class="hist-select" value="${o.numero}" title="Selecionar ${o.numero}">`;
           tr.appendChild(tdSel);
 
-          const tdNum  = document.createElement('td'); tdNum.className='td-num';  tdNum.textContent = o.numero;
+          const tdNum  = document.createElement('td'); tdNum.className='td-num'; tdNum.textContent = o.numero;
           const tdData = document.createElement('td'); tdData.className='td-data'; tdData.textContent = o.data;
-          const tdTec  = document.createElement('td'); tdTec.className='td-tec';  tdTec.textContent  = o.tecnico || '-';
+          const tdTec  = document.createElement('td'); tdTec.className='td-tec'; tdTec.textContent  = o.tecnico || '-';
           const tdItens= document.createElement('td'); tdItens.textContent = o.itens?.length || 0;
-          const tdTot  = document.createElement('td'); tdTot.textContent   = BRL(o.total||0);
+          const tdTot  = document.createElement('td'); tdTot.textContent = BRL(o.total||0);
 
           tr.appendChild(tdNum);
           tr.appendChild(tdData);
@@ -914,22 +900,22 @@ function boot(){
           tr.appendChild(tdItens);
           tr.appendChild(tdTot);
 
-          const sel=makeStatusSelect(o.status||'Em andamento', false);
+          const sel=makeFlowSelect(o.status||'Supervisor Diversey', false);
           sel.addEventListener('change', async ()=>{
             let newVal = sel.value;
-            if(newVal==='Concluído'){
-              const ok=confirm('Confirmar entrega do material para concluir?');
-              if(!ok){ sel.value=o.status||'Em andamento'; applyStatusStyle(sel, sel.value); return; }
+            if(newVal==='Entregue'){
+              const ok=confirm('Confirmar entrega do material para marcar como "Entregue"?');
+              if(!ok){ sel.value=o.status||'Supervisor Diversey'; applyFlowStyle(sel, sel.value); return; }
             }
             try{
               await atualizarStatusGlobal(o.numero, newVal);
-              toast('Status atualizado no GLOBAL: '+newVal);
+              toast('Fluxo atualizado no GLOBAL: '+newVal);
               o.status=newVal;
             }catch(e){
               console.error(e);
-              toast('Falha ao atualizar no GLOBAL — status não alterado');
-              sel.value = o.status||'Em andamento';
-              applyStatusStyle(sel, sel.value);
+              toast('Falha ao atualizar no GLOBAL — fluxo não alterado');
+              sel.value = o.status||'Supervisor Diversey';
+              applyFlowStyle(sel, sel.value);
             }
           });
           const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
@@ -985,7 +971,7 @@ function auditarPedido(){
     const val = Math.max(0, parseFloat(tr.querySelector('.valor').value)||0);
     const desc = (tr.querySelector('.desc').value||'').trim();
 
-    if(!id || !isIdValid(id)){ issues.push({row,type:'ID inválido',level:'warn',msg:`Linha ${row}: ID Máquina ausente ou inválido.`}); tr.classList.add('row-error'); }
+    // IDs aceitos livremente
     if(!(val>0)){ issues.push({row,type:'Preço inválido',level:'warn',msg:`Linha ${row}: valor unitário não preenchido ou zero.`}); tr.classList.add('row-error'); }
     if(!(qtd>=1)){ issues.push({row,type:'Qtd inválida',level:'warn',msg:`Linha ${row}: quantidade deve ser ≥ 1.`}); tr.classList.add('row-error'); }
     if(!desc){ issues.push({row,type:'Descrição faltando',level:'warn',msg:`Linha ${row}: descrição do item está vazia.`}); tr.classList.add('row-error'); }
