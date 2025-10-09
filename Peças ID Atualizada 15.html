@@ -93,6 +93,14 @@ select.status.flow-ent{background:var(--ok)}
 .suggest-item:hover, .suggest-item.active{background:rgba(255,255,255,.06)}
 .suggest-code{font-weight:700; min-width:62px}
 .suggest-price{margin-left:auto; color:var(--muted); font-size:12px}
+
+/* ====== ADIÇÃO: congelar linha/coluna no HISTÓRICO ====== */
+#tabela-hist thead th { z-index: 3; }                 /* cabeçalho acima das células */
+#tabela-hist th:first-child,
+#tabela-hist td:first-child {
+  position: sticky; left: 0; z-index: 2; background: var(--card);
+}
+/* Se quiser o cabeçalho colado no topo da janela, troque para: #tabela-hist thead th { top:0 } */
 </style>
 </head>
 <body>
@@ -260,6 +268,11 @@ function fmtDataSolic(data){
   }
   return data;
 }
+
+/* ===== ADIÇÃO: comparador para mais novos primeiro ===== */
+const byRecentFirst = (a,b) =>
+  (b.data || '').localeCompare(a.data || '') ||
+  (b.numero || '').localeCompare(a.numero || '');
 
 /* ========= Config ========= */
 const LS = { PARTS:'sp_parts_v3', TECHS:'sp_techs_v3', ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', THEME:'sp_theme', MODO:'sp_modo_integracao' };
@@ -590,6 +603,7 @@ function calcTotal(){
   const frete     = Math.max(0, parseFloat($('#frete').value)||0);
   const total     = Math.max(0, subtotal - descValor + frete);
   $('#desc-valor').value = descValor;
+  '#frete'
   $('#frete').value = frete;
   $('#subtotal').textContent=BRL(subtotal);
   $('#total-geral').textContent=BRL(total);
@@ -842,7 +856,11 @@ function updateStatusLocal(numero, novo){
 /* ========= Histórico (LOCAL) ========= */
 function montarHistoricoLocal(){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
-  const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+  let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+
+  /* ===== ADIÇÃO: ordena do mais novo para o mais antigo ===== */
+  lista.sort(byRecentFirst);
+
   $('#hist').style.display=lista.length?'block':'none';
 
   for(const o of lista){
@@ -998,7 +1016,11 @@ function boot(){
     const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
     if(getModo()==='global'){
       try{
-        const lista=await listarGlobalExcel(); 
+        let lista=await listarGlobalExcel();
+
+        /* ===== ADIÇÃO: ordenar mais novos primeiro (GLOBAL) ===== */
+        lista.sort(byRecentFirst);
+
         if(!lista.length){ hist.style.display='none'; return; }
         hist.style.display='block';
         for(const o of lista){
@@ -1154,5 +1176,3 @@ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded
 </script>
 </body>
 </html>
-
-
