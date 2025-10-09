@@ -68,16 +68,20 @@ kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;bord
 .modal .issue:last-child{border-bottom:none}
 .modal .muted{color:var(--muted);font-size:12px}
 .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+/* === FLUXO (cores no SELECT) === */
 select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
 select.status.flow-sup{background:var(--warn)}
 select.status.flow-forn{background:var(--info)}
 select.status.flow-rota{background:var(--step)}
 select.status.flow-ent{background:var(--ok)}
+/* filtros do histórico */
 .hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .hist-filtros input,.hist-filtros select{max-width:220px}
 .hist-empty{color:var(--muted); padding:10px 0}
+/* Ações do histórico à direita */
 #tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end}
 .btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)}
+/* === AUTOCOMPLETE de Peças === */
 .suggest-wrap{position:relative}
 .suggest{
   position:absolute; z-index:20; left:0; right:0; top:calc(100% + 4px);
@@ -114,6 +118,7 @@ select.status.flow-ent{background:var(--ok)}
     <div class="grid">
       <label for="req-num">Nº Solicitação</label>
       <input id="req-num" readonly>
+
       <label for="tecnico">Técnico</label>
       <input id="tecnico" list="tecnicos" placeholder="Selecione o técnico">
       <datalist id="tecnicos"></datalist>
@@ -128,6 +133,12 @@ select.status.flow-ent{background:var(--ok)}
       <input id="uf" readonly>
       <label>CEP</label>
       <input id="cep" readonly>
+
+      <label for="envio">Tipo de Envio</label>
+      <select id="envio">
+        <option value="Normal">Normal</option>
+        <option value="Sedex">Sedex</option>
+      </select>
 
       <label>Observações</label>
       <textarea id="obs" rows="2"></textarea>
@@ -156,8 +167,8 @@ select.status.flow-ent{background:var(--ok)}
       <button id="add-item" type="button" class="btn-ok">➕ Adicionar Item</button>
       <div class="total-box">
         Subtotal: <span id="subtotal">R$ 0,00</span>
-        · Desconto (R$): <input id="desc-valor" type="number" min="0" step="0.01" value="0">
-        · Frete: <input id="frete" type="number" step="0.01" value="0">
+        · Desconto (R$): <input id="desc-valor" type="number" step="0.01" min="0" value="0">
+        · Frete (R$): <input id="frete" type="number" step="0.01" value="0">
         · <strong>Total:</strong> <span id="total-geral">R$ 0,00</span>
       </div>
     </div>
@@ -171,6 +182,7 @@ select.status.flow-ent{background:var(--ok)}
     </div>
   </section>
 
+  <!-- HISTÓRICO -->
   <section class="card" id="hist" style="display:none">
     <h2>📚 Mostrar Histórico</h2>
 
@@ -216,6 +228,7 @@ select.status.flow-ent{background:var(--ok)}
   </section>
 </main>
 
+<!-- Modal Relatório -->
 <div id="modal-audit" class="modal-backdrop">
   <div class="modal">
     <h3>Relatório de Consistência</h3>
@@ -233,7 +246,6 @@ select.status.flow-ent{background:var(--ok)}
 
 <script>
 'use strict';
-
 /* ========= Helpers ========= */
 const $  = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
@@ -241,22 +253,12 @@ const BRL = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:
 const toast = (m,ms=2200)=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),ms);};
 const clamp = (v,min,max)=>Math.min(max,Math.max(min,v||0));
 const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
-
 function fmtDataSolic(data){
   if(!data) return new Date().toLocaleDateString('pt-BR');
   if(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(data)){
     const [y,m,d]=data.split('-'); return `${d}/${m}/${y}`;
   }
   return data;
-}
-
-/* Sanitize para nomes de arquivo (remove caracteres inválidos) */
-function fileSafe(str){
-  return String(str||'')
-    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')  // remove acentos
-    .replace(/[\\/:*?"<>|]/g,' ')                      // inválidos no Windows
-    .replace(/\s+/g,' ')                                // colapsa espaços
-    .trim();
 }
 
 /* ========= Config ========= */
@@ -267,130 +269,18 @@ const API_UPDATE_STATUS = 'COLE_AQUI_URL_DO_FLOW_STATUS';
 const getModo = () => localStorage.getItem(LS.MODO) || 'local';
 const setModo = m => { localStorage.setItem(LS.MODO,m); $('#badge-modo').textContent='Modo: '+m.toUpperCase(); toast(m==='global'?'Modo GLOBAL (Excel) ativo':'Modo LOCAL ativo'); };
 
-/* ========= Peças (base) — 120 itens ========= */
+/* ========= Peças (base) — amostra ========= */
 const itensBase = [
   {"codigo":"CS001","descricao":"Adaptador Braço Lavagem HD-80","valor":225.00},
-  {"codigo":"CS002","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-50","valor":175.70},
   {"codigo":"CS003","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-80","valor":205.00},
-  {"codigo":"CS004","descricao":"Adaptador Interno HD-80","valor":350.00},
-  {"codigo":"CS005","descricao":"Arruela De Rotação HD-80","valor":40.00},
-  {"codigo":"CS006","descricao":"Assento Do Braço De Lavagem (Bucha) HD-50","valor":101.00},
-  {"codigo":"CS007","descricao":"Batente Lateral HD-80","valor":105.00},
   {"codigo":"CS008","descricao":"Bicos Injetores Do Braço HD-50/HD-80","valor":114.48},
-  {"codigo":"CS009","descricao":"Boiler HD-50","valor":2033.00},
-  {"codigo":"CS010","descricao":"Boiler HD-80","valor":2355.00},
-  {"codigo":"CS011","descricao":"Bomba De Enxague (Importada) HD-50","valor":2007.79},
-  {"codigo":"CS012","descricao":"Boma De Enxague (Nacional) HD-80","valor":1550.00},
-  {"codigo":"CS013","descricao":"Bomba De Lavagem HD-50","valor":7529.22},
-  {"codigo":"CS014","descricao":"Bomba De Lavagem HD-80","valor":11293.85},
-  {"codigo":"CS015","descricao":"Braço Capo HD-80","valor":1255.00},
-  {"codigo":"CS016","descricao":"Braço De Lavagem HD-50","valor":1205.00},
-  {"codigo":"CS017","descricao":"Braço De Lavagem Superior Completo HD-80","valor":1715.00},
-  {"codigo":"CS018","descricao":"Caixa De Montagem Elétrica HD-80","valor":680.00},
-  {"codigo":"CS019","descricao":"Caixa De Montagem HD-50","valor":225.88},
-  {"codigo":"CS020","descricao":"Capa Do Filtro De Residuo HD-50","valor":150.60},
-  {"codigo":"CS021","descricao":"Capo HD-80","valor":5020.00},
-  {"codigo":"CS022","descricao":"Cesto De Resíduo HD-80","valor":150.60},
-  {"codigo":"CS023","descricao":"Chicote NR12","valor":3210.00},
-  {"codigo":"CS024","descricao":"Conexão Braço HD-80","valor":1507.00},
-  {"codigo":"CS025","descricao":"Conj Termostato","valor":886.72},
-  {"codigo":"CS026","descricao":"Conjunto de cesto de residuo NT-300","valor":1123.05},
-  {"codigo":"CS027","descricao":"Contactora De Comando HD-80","valor":328.00},
-  {"codigo":"CS028","descricao":"Contatora HD-50","valor":328.00},
-  {"codigo":"CS029","descricao":"Curva Braço Superior HD-50","valor":115.00},
-  {"codigo":"CS030","descricao":"Disjuntor 10A HD-80","valor":375.00},
-  {"codigo":"CS031","descricao":"Disjuntor 125A","valor":1776.85},
-  {"codigo":"CS032","descricao":"Disjuntor 80A","valor":313.20},
-  {"codigo":"CS033","descricao":"Eixo De Suporte Do Braço  HD-50","valor":301.50},
-  {"codigo":"CS034","descricao":"Etiqueta Painel NT","valor":545.90},
-  {"codigo":"CS035","descricao":"Filtro De Residuo HD-50","valor":742.00},
-  {"codigo":"CS036","descricao":"Filtro De Residuo Hdw-80 HD-80","valor":401.56},
-  {"codigo":"CS037","descricao":"Fim de curso HDW-200","valor":789.21},
-  {"codigo":"CS038","descricao":"Fim de curso HDW-200 (Completo)","valor":2175.50},
-  {"codigo":"CS039","descricao":"Flange Braço Inferior HD-50","valor":742.00},
-  {"codigo":"CS040","descricao":"Flange Braço Superior HD-50","valor":742.00},
-  {"codigo":"CS041","descricao":"Flauta De Enxague (S/ Bicos) HD-80","valor":125.50},
-  {"codigo":"CS042","descricao":"Flauta Do Braço HD-50","valor":125.50},
-  {"codigo":"CS043","descricao":"Flauta HD-80","valor":1204.75},
-  {"codigo":"CS044","descricao":"Fonte 24V 10A HD-50/HD-80","valor":155.00},
   {"codigo":"CS045","descricao":"Kit Mangueiras (Agua + Dreno) HD-50/HD-80","valor":240.00},
-  {"codigo":"CS046","descricao":"Luva Braço Superior HD-50","valor":90.00},
   {"codigo":"CS047","descricao":"Mangueira De Borracha HD-80","valor":95.00},
-  {"codigo":"CS048","descricao":"Mola Da Porta HD-50","valor":75.00},
-  {"codigo":"CS049","descricao":"Mola Do Capo HD-80","valor":830.00},
-  {"codigo":"CS050","descricao":"Painel Elétrico Completo HD-50","valor":9550.00},
-  {"codigo":"CS051","descricao":"Painel Ihm HD-50/HD-80","valor":1588.00},
-  {"codigo":"CS052","descricao":"Parafuso Da Rondana HD-50","valor":75.29},
-  {"codigo":"CS053","descricao":"Parafuso De Fixação Braço De Lavagem HD-80","valor":105.00},
-  {"codigo":"CS054","descricao":"Parafuso De Fixação Da Polia HD-80","valor":145.00},
-  {"codigo":"CS055","descricao":"Pino Batente Lateral Capo HD-80","valor":130.00},
-  {"codigo":"CS056","descricao":"Placa Controladora HD-50/HD-80","valor":6307.00},
-  {"codigo":"CS057","descricao":"Placa De Montagem HD-50","valor":280.00},
-  {"codigo":"CS058","descricao":"Polia De Movimentação Do Capo HD-80","valor":135.00},
-  {"codigo":"CS059","descricao":"Polia Inferior Do Capo HD-80","valor":150.00},
-  {"codigo":"CS060","descricao":"Porta HD-50","valor":1760.00},
-  {"codigo":"CS061","descricao":"Pressostato De Nível HD-50","valor":610.00},
-  {"codigo":"CS062","descricao":"Pressostato HDW-200","valor":453.68},
-  {"codigo":"CS063","descricao":"Pressotato De Nível HD-80","valor":572.40},
-  {"codigo":"CS064","descricao":"Pulmão HD-80","valor":500.00},
-  {"codigo":"CS065","descricao":"Relé De Proteção HD-50/HD-80","valor":414.11},
-  {"codigo":"CS067","descricao":"Resistencia do booster HDW-200","valor":1696.00},
-  {"codigo":"CS068","descricao":"Resistencia Do Tanque Com  Flange Hd50","valor":1017.60},
-  {"codigo":"CS069","descricao":"Resistencia Do Tanque Com  Flange Hd80","valor":1023.00},
-  {"codigo":"CS070","descricao":"Resistencia do TQ HDW-200","valor":1346.73},
   {"codigo":"CS071","descricao":"Resistencia NT-300","valor":1696.00},
-  {"codigo":"CS072","descricao":"Resistências Boiler Com  Flange  Hd50","valor":1272.00},
-  {"codigo":"CS073","descricao":"Resistências Boiler Com  Flange  Hd80","valor":1484.00},
-  {"codigo":"CS074","descricao":"Roldana HD-80","valor":163.50},
-  {"codigo":"CS075","descricao":"Rondana Da Porta HD-50","valor":75.00},
-  {"codigo":"CS076","descricao":"Saida Do Dreno HD-50","valor":476.85},
-  {"codigo":"CS077","descricao":"Sensor Capo HD-80","valor":108.45},
-  {"codigo":"CS078","descricao":"Sensor De Nivel HD-50","valor":606.74},
-  {"codigo":"CS079","descricao":"Sensor De Nível HD-80","valor":606.74},
-  {"codigo":"CS080","descricao":"Sensor De Temperatura HD-50","valor":255.00},
-  {"codigo":"CS081","descricao":"Solenoide De Agua HD-50","valor":175.00},
-  {"codigo":"CS082","descricao":"Sonda Temperatura","valor":320.51},
-  {"codigo":"CS083","descricao":"Suporte Bomba De Lavagem HD-80","valor":75.00},
-  {"codigo":"CS084","descricao":"Suporte Braço Capo HD-80","valor":40.00},
-  {"codigo":"CS085","descricao":"Suporte Capo HD-80","valor":150.00},
-  {"codigo":"CS086","descricao":"Suporte Do Boiler HD-80","valor":225.00},
-  {"codigo":"CS087","descricao":"Suporte Do Rack HD-80","valor":1255.00},
-  {"codigo":"CS088","descricao":"Suporte Fixação HD-80","valor":155.00},
-  {"codigo":"CS089","descricao":"Suporte Gancho Bomba De Lavagem HD-80","valor":350.00},
-  {"codigo":"CS090","descricao":"Suporte Luva Para Mangeira Do Dreno HD-80","valor":276.00},
-  {"codigo":"CS091","descricao":"Suporte Painel HD-80","valor":405.00},
-  {"codigo":"CS092","descricao":"Suporte Regulável De Altura(Pé) HD-80","valor":335.00},
-  {"codigo":"CS093","descricao":"Suporte Termostato Do Boiler HD-80","valor":51.00},
-  {"codigo":"CS094","descricao":"Tampa Frontal HD-50","valor":602.34},
-  {"codigo":"CS095","descricao":"Tampa Frontal HD-80","valor":230.00},
-  {"codigo":"CS096","descricao":"Tampa Inferior HD-50","valor":502.00},
-  {"codigo":"CS097","descricao":"Tampa Inferior Traseira HD-50","valor":955.00},
-  {"codigo":"CS098","descricao":"Tampa Lateral Direita HD-50","valor":905.00},
-  {"codigo":"CS099","descricao":"Tampa Lateral HD-80","valor":705.00},
-  {"codigo":"CS100","descricao":"Tampa Superior HD-50","valor":1130.00},
-  {"codigo":"CS101","descricao":"Tampa Superior HD-80","valor":205.00},
-  {"codigo":"CS102","descricao":"Tampa Traseira HD-50","valor":1005.00},
-  {"codigo":"CS103","descricao":"Tampa Traseira HD-80","valor":715.00},
-  {"codigo":"CS104","descricao":"Tampao Do Dreno HD-50","valor":119.06},
-  {"codigo":"CS105","descricao":"Tampão Do Dreno HD-80","valor":183.60},
-  {"codigo":"CS106","descricao":"Tela De Filtro De Resíduo Direito HD-80","valor":337.61},
-  {"codigo":"CS107","descricao":"Tela De Filtro De Resíduo Esquerdo HD-80","valor":337.61},
-  {"codigo":"CS108","descricao":"Terminal De Aterramento HD-50","valor":55.50},
-  {"codigo":"CS109","descricao":"Termostato Do Boiler HD-50/H80","valor":901.00},
-  {"codigo":"CS110","descricao":"Termostato Do Tanque HD/HD-80","valor":254.40},
-  {"codigo":"CS111","descricao":"Trilho Dim HD-50/HD-80","valor":40.00},
-  {"codigo":"CS112","descricao":"Tubo Braço Lavagem Superior HD-80","valor":1635.00},
-  {"codigo":"CS113","descricao":"Tubo Da Bomba De Lavagem (Mangote Curvo) HD-80","valor":350.00},
-  {"codigo":"CS114","descricao":"Tubo De Drenagem Hdw-80 HD-80","valor":355.00},
-  {"codigo":"CS115","descricao":"Tubo De Saida Da Bomba De Lavagem HD-50","valor":225.88},
-  {"codigo":"CS116","descricao":"Tubo Saida Bomba De Lavagem HD-80","valor":263.55},
-  {"codigo":"CS117","descricao":"Tupo Braço Superior HD-50","valor":52.00},
-  {"codigo":"CS118","descricao":"Valvula De Agua HD-80","valor":159.00},
-  {"codigo":"CS119","descricao":"Valvula Solenoide HDW-200 NT","valor":172.50},
   {"codigo":"CS120","descricao":"Etiqueta Painel","valor":69.00}
 ];
 
-/* ========= Técnicos ========= */
+/* ========= Técnicos (ordenados alfabeticamente) ========= */
 const tecnicosBase={
   "Antonio Ferreira De Santana Filho":{"endereco":"Av Curió - Campanário, Ap 510 Bloco B","bairro":"","cep":"09.925-000","municipio":"Diadema","uf":"SP"},
   "Antonio Rocker":{"endereco":"Rua Estoril 131","bairro":"Veleiros","cep":"47.730-900","municipio":"São Paulo","uf":"SP"},
@@ -417,7 +307,6 @@ const tecnicosBase={
   "Sebastião Gomes Ribeiro":{"endereco":"RUA THOME DE SOUZA, 335","bairro":"LAGOA GRANDE – SEDE","cep":"45.810-000","municipio":"PORTO SEGURO","uf":"BA"},
   "Welington Bastos Tavares":{"endereco":"AV Morumbi Qd 34 Lt 11","bairro":"Vila Mariana","cep":"75.134-550","municipio":"Anápolis","uf":"GO"}
 };
-
 
 /* ========= Datalists ========= */
 function preencherListas(){
@@ -473,18 +362,23 @@ function wireIdValidation(input){
   input.title = 'ID da Máquina — qualquer formato é aceito.';
 }
 
-/* ========= AUTOCOMPLETE ========= */
+/* ========= AUTOCOMPLETE de peças ========= */
 function makeSuggestUI(input, rowRef){
-  const wrap=document.createElement('div'); wrap.className='suggest-wrap';
-  input.parentElement.insertBefore(wrap, input); wrap.appendChild(input);
+  const wrap=document.createElement('div');
+  wrap.className='suggest-wrap';
+  input.parentElement.insertBefore(wrap, input);
+  wrap.appendChild(input);
   const list=document.createElement('div'); list.className='suggest'; wrap.appendChild(list);
   let results=[], active=-1, lastQuery='';
-
   const render=(items)=>{
-    list.innerHTML=''; if(!items.length){ list.classList.remove('show'); return; }
+    list.innerHTML='';
+    if(!items.length){ list.classList.remove('show'); return; }
     items.slice(0,100).forEach((p,idx)=>{
       const div=document.createElement('div'); div.className='suggest-item'; div.dataset.idx=idx;
-      div.innerHTML = `<span class="suggest-code">${p.codigo}</span><span>${p.descricao}</span><span class="suggest-price">${BRL(p.valor)}</span>`;
+      const c=document.createElement('span'); c.className='suggest-code'; c.textContent=p.codigo;
+      const d=document.createElement('span'); d.textContent=p.descricao;
+      const pr=document.createElement('span'); pr.className='suggest-price'; pr.textContent=BRL(p.valor);
+      div.appendChild(c); div.appendChild(d); div.appendChild(pr);
       div.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); choose(idx); });
       list.appendChild(div);
     });
@@ -496,11 +390,13 @@ function makeSuggestUI(input, rowRef){
     tr.querySelector('.codigo').value=p.codigo;
     tr.querySelector('.desc').value=p.descricao;
     tr.querySelector('.valor').value=p.valor;
-    list.classList.remove('show'); calcTotal();
+    list.classList.remove('show');
+    calcTotal();
   };
   const keyNav=(ev)=>{
     if(!list.classList.contains('show')) return;
-    const max=results.length-1; const items=[...list.querySelectorAll('.suggest-item')];
+    const max=results.length-1;
+    const items=[...list.querySelectorAll('.suggest-item')];
     if(ev.key==='ArrowDown'){ ev.preventDefault(); active=Math.min(max,active+1); }
     else if(ev.key==='ArrowUp'){ ev.preventDefault(); active=Math.max(0,active-1); }
     else if(ev.key==='Enter'){ ev.preventDefault(); if(active>=0) choose(active); return; }
@@ -509,7 +405,8 @@ function makeSuggestUI(input, rowRef){
     if(active>=0){ items[active].scrollIntoView({block:'nearest'}); }
   };
   const doFilter=()=>{
-    const q=input.value.trim().toLowerCase(); if(q===lastQuery) return; lastQuery=q;
+    const q=input.value.trim().toLowerCase();
+    if(q===lastQuery) return; lastQuery=q;
     if(!q){ list.classList.remove('show'); return; }
     results = itensBase.filter(p=> p.codigo.toLowerCase().includes(q) || p.descricao.toLowerCase().includes(q) );
     render(results);
@@ -566,6 +463,8 @@ function collectItems(){
   });
   return itens;
 }
+
+/* ========= Totais (Desconto em R$ aplicado no total) ========= */
 function calcTotal(){
   let subtotal=0;
   $$('#tabela-itens tbody tr').forEach(tr=>{
@@ -574,16 +473,13 @@ function calcTotal(){
     const s=q*v; subtotal+=s;
     tr.querySelector('.sub').textContent=BRL(s);
   });
-
-  const descValor=Math.max(0, parseFloat($('#desc-valor').value)||0); // desconto em R$
-  const frete=Math.max(0, parseFloat($('#frete').value)||0);
-  const total=Math.max(0, subtotal - descValor + frete); // aplicado no total (subtotal) + frete
-
-  $('#desc-valor').value = (Math.round(descValor*100)/100).toFixed(2);
-  $('#frete').value = (Math.round(frete*100)/100).toFixed(2);
+  const descValor = Math.max(0, parseFloat($('#desc-valor').value)||0);
+  const frete     = Math.max(0, parseFloat($('#frete').value)||0);
+  const total     = Math.max(0, subtotal - descValor + frete);
+  $('#desc-valor').value = descValor;
+  $('#frete').value = frete;
   $('#subtotal').textContent=BRL(subtotal);
   $('#total-geral').textContent=BRL(total);
-
   return {subtotal,total,descValor,frete};
 }
 
@@ -626,25 +522,19 @@ function gerarNumero(){
 /* ========= Seleção & Exclusão (Histórico) ========= */
 function getHistoricoSelecionados(){
   return [...document.querySelectorAll('#tabela-hist tbody input.hist-select:checked')]
-    .map(chk => chk.value)
-    .filter(Boolean);
+    .map(chk => chk.value).filter(Boolean);
 }
 function excluirSelecionadosLocal(){
   const numeros = getHistoricoSelecionados();
   if(!numeros.length){ toast('Nenhum pedido selecionado'); return; }
   const ok = confirm(`Excluir ${numeros.length} pedido(s) do histórico LOCAL? Esta ação não pode ser desfeita.`);
   if(!ok) return;
-
   let lista = JSON.parse(localStorage.getItem(LS.ORD) || '[]');
   const antes = lista.length;
   lista = lista.filter(o => !numeros.includes(o.numero));
   localStorage.setItem(LS.ORD, JSON.stringify(lista));
-
   const cur = JSON.parse(localStorage.getItem(LS.CUR) || 'null');
-  if(cur && numeros.includes(cur.numero)){
-    localStorage.removeItem(LS.CUR);
-  }
-
+  if(cur && numeros.includes(cur.numero)){ localStorage.removeItem(LS.CUR); }
   toast(`Removido(s): ${antes - lista.length}`);
   montarHistoricoLocal();
 }
@@ -706,15 +596,9 @@ function orderToAOA(o){
     'Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'
   ];
   const rows=(o.itens||[]).map(it=>[
-    o.numero || '',
-    dataSolic,
-    o.tecnico || '-',
-    it.codigo||'',
-    (it.idMaquina||''),
-    it.qtd,
-    it.descricao,
-    Number(it.valor||0),
-    Number(it.qtd*it.valor||0)
+    o.numero || '', dataSolic, o.tecnico || '-',
+    it.codigo||'', (it.idMaquina||''), it.qtd, it.descricao,
+    Number(it.valor||0), Number(it.qtd*it.valor||0)
   ]);
   return [head,...rows];
 }
@@ -724,12 +608,20 @@ function exportXLSXFrom(o){
   ws1['!cols']=[{wch:22},{wch:18},{wch:30},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Itens');
 
+  // Resumo com Tipo de Envio e Desconto R$
   const ws2=XLSX.utils.aoa_to_sheet([
-    ['Número',o.numero],['Data',fmtDataSolic(o.data)],['Técnico',o.tecnico],
+    ['Número',o.numero],
+    ['Data',fmtDataSolic(o.data)],
+    ['Técnico',o.tecnico],
     ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
     ['Município/UF',`${o.municipio||''} - ${o.uf||''}`],
-    ['CEP',o.cep||''],['Observações',o.obs||'-'],
-    ['Subtotal',o.subtotal||0],['Desconto (R$)',o.descValor||0],['Frete',o.frete||0],['TOTAL',o.total||0],
+    ['CEP',o.cep||''],
+    ['Tipo de Envio',o.envio||'Normal'],
+    ['Observações',o.obs||'-'],
+    ['Subtotal',o.subtotal||0],
+    ['Desconto (R$)',o.descValor||0],
+    ['Frete (R$)',o.frete||0],
+    ['TOTAL',o.total||0],
     ['Fluxo',o.status||'Supervisor Diversey']
   ]);
   ws2['!cols']=[{wch:18},{wch:60}];
@@ -738,8 +630,7 @@ function exportXLSXFrom(o){
   XLSX.writeFile(wb,`${o.numero||'SOLICITACAO'}.xlsx`);
   toast('Excel (.xlsx) gerado ✅');
 }
-
-/* ======== PDF (com número + técnico no nome do arquivo) ======== */
+function makeSafeFilename(s){ return (s||'').replace(/[\\\/:*?"<>|]+/g,'').trim() || 'SemTecnico'; }
 async function baixarPDFFrom(o){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'pt', format:'a4' });
@@ -755,7 +646,8 @@ async function baixarPDFFrom(o){
   y += 14;
   doc.text(`Técnico: ${o.tecnico||'-'}`, M, y); y += 14;
   doc.text(`Endereço: ${(o.endereco||'-')}, ${(o.bairro||'')}`, M, y); y += 14;
-  doc.text(`${o.municipio||''} - ${o.uf||''} • CEP: ${o.cep||''}`, M, y);
+  doc.text(`${o.municipio||''} - ${o.uf||''} • CEP: ${o.cep||''}`, M, y); y += 14;
+  doc.text(`Envio: ${o.envio||'Normal'}`, M, y);
 
   if (o.obs) {
     y += 18; doc.setFont('helvetica','bold'); doc.text('Observações:', M, y);
@@ -789,18 +681,17 @@ async function baixarPDFFrom(o){
   let ly = fy + 14;
   [
     `Subtotal: ${BRL(o.subtotal||0)}`,
-    `Desconto: ${BRL(o.descValor||0)}`,
-    `Frete: ${BRL(o.frete||0)}`,
+    `Desconto (R$): ${BRL(o.descValor||0)}`,
+    `Frete (R$): ${BRL(o.frete||0)}`,
     `TOTAL: ${BRL(o.total||0)}`,
     `Fluxo: ${o.status||'Supervisor Diversey'}`
   ].forEach(s => { doc.text(s, M, ly); ly += 14; });
 
   const blob = doc.output('blob');
+  const safeTec = makeSafeFilename(o.tecnico);
   const a=document.createElement('a');
-  const nomeNumero = fileSafe(o.numero || 'SOLICITACAO');
-  const nomeTec = fileSafe(o.tecnico || 'SEM_TECNICO');
   a.href=URL.createObjectURL(blob);
-  a.download=`${nomeNumero}_${nomeTec}.pdf`;
+  a.download=`${o.numero||'SOLICITACAO'} - ${safeTec}.pdf`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
   toast('PDF gerado ✅');
 }
@@ -814,6 +705,7 @@ function salvarLocal(){
   const dados={
     numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
     tecnico, endereco:$('#endereco').value, bairro:$('#bairro').value, municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value,
+    envio:$('#envio').value || 'Normal',
     obs:$('#obs').value, ...tot, itens,
     status:'Supervisor Diversey'
   };
@@ -897,6 +789,7 @@ function abrirLocal(num){
   const o=lista.find(x=>x.numero===num); if(!o) return;
   $('#req-num').value=o.numero;
   $('#tecnico').value=o.tecnico; preencherEndereco(o.tecnico);
+  $('#envio').value=o.envio||'Normal';
   $('#obs').value=o.obs||'';
   $('#desc-valor').value=o.descValor||0;
   $('#frete').value=o.frete||0;
@@ -906,13 +799,17 @@ function abrirLocal(num){
 }
 
 /* ========= Excel/PDF do formulário atual ========= */
-function getOrder(){ const it=collectItems(), c=calcTotal(); return {
-  numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
-  tecnico:$('#tecnico').value, endereco:$('#endereco').value, bairro:$('#bairro').value,
-  municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value, obs:$('#obs').value,
-  itens:it, subtotal:c.subtotal, total:c.total, descValor:c.descValor, frete:c.frete,
-  status:'Supervisor Diversey'
-};}
+function getOrder(){
+  const it=collectItems(), c=calcTotal();
+  return {
+    numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
+    tecnico:$('#tecnico').value, endereco:$('#endereco').value, bairro:$('#bairro').value,
+    municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value,
+    envio:$('#envio').value || 'Normal', obs:$('#obs').value,
+    itens:it, subtotal:c.subtotal, total:c.total, descValor:c.descValor, frete:c.frete,
+    status:'Supervisor Diversey'
+  };
+}
 function exportXLSX(){ exportXLSXFrom(getOrder()); }
 async function baixarPDF(){ await baixarPDFFrom(getOrder()); }
 
@@ -923,18 +820,11 @@ async function listarGlobalExcel(){
   const j=await r.json(); if(!j.success) throw new Error('Resposta inválida do Flow');
   const rows=j.rows||[];
   return rows.map(r=>({
-    numero:r.Numero,
-    data:r.Data,
-    tecnico:r.Tecnico,
-    endereco:r.Endereco,
-    bairro:r.Bairro,
-    municipio:r.Municipio,
-    uf:r.UF,
-    cep:r.CEP,
-    subtotal:Number(r.Subtotal||0),
-    descValor:Number(r.Desconto||0),     // mapeia o campo de desconto para valor em R$
-    frete:Number(r.Frete||0),
-    total:Number(r.Total||0),
+    numero:r.Numero, data:r.Data, tecnico:r.Tecnico, endereco:r.Endereco, bairro:r.Bairro,
+    municipio:r.Municipio, uf:r.UF, cep:r.CEP,
+    envio:r.Envio||'Normal',
+    subtotal:Number(r.Subtotal||0), descValor:Number(r.DescontoValor||0),
+    frete:Number(r.Frete||0), total:Number(r.Total||0),
     status:r.Status||'Supervisor Diversey',
     itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
   }));
@@ -952,6 +842,7 @@ async function atualizarStatusGlobal(numero, novoStatus){
 function novaSolicitacao(){
   $('#tecnico').value=''; $('#endereco').value=''; $('#bairro').value='';
   $('#municipio').value=''; $('#uf').value=''; $('#cep').value='';
+  $('#envio').value='Normal';
   $('#obs').value=''; $('#desc-valor').value=0; $('#frete').value=0;
   $('#tabela-itens tbody').innerHTML='';
   gerarNumero(); addRow(); toast('Nova solicitação iniciada 🔄');
@@ -990,7 +881,6 @@ function boot(){
     excluirSelecionadosLocal();
   });
 
-  // ➜ Mostrar Histórico
   $('#btn-hist').addEventListener('click',async()=>{
     const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
     if(getModo()==='global'){
@@ -1060,7 +950,6 @@ function boot(){
     }
   });
 
-  // ➜ Ocultar Histórico
   $('#btn-ocultar-hist').addEventListener('click',()=>{
     $('#hist').style.display='none';
     toast('Histórico ocultado');
