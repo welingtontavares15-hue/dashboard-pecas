@@ -54,7 +54,7 @@ th{position:sticky;top:60px;background:var(--card)}
 tr:hover{background:rgba(255,255,255,.04)}
 td input, td select{width:100%}
 .total-box{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;font-weight:600}
-.total-box input{width:120px;text-align:right}
+.total-box input{width:140px;text-align:right}
 .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:50}
 .toast.show{display:block}
 tr.row-error{outline:2px solid var(--danger); background:rgba(239,68,68,.08)}
@@ -156,7 +156,7 @@ select.status.flow-ent{background:var(--ok)}
       <button id="add-item" type="button" class="btn-ok">➕ Adicionar Item</button>
       <div class="total-box">
         Subtotal: <span id="subtotal">R$ 0,00</span>
-        · Desconto (%): <input id="desc-perc" type="number" min="0" max="100" value="0">
+        · Desconto (R$): <input id="desc-valor" type="number" min="0" step="0.01" value="0">
         · Frete: <input id="frete" type="number" step="0.01" value="0">
         · <strong>Total:</strong> <span id="total-geral">R$ 0,00</span>
       </div>
@@ -472,47 +472,32 @@ function wireIdValidation(input){
 
 /* ========= AUTOCOMPLETE ========= */
 function makeSuggestUI(input, rowRef){
-  const wrap=document.createElement('div');
-  wrap.className='suggest-wrap';
-  input.parentElement.insertBefore(wrap, input);
-  wrap.appendChild(input);
-
-  const list=document.createElement('div');
-  list.className='suggest';
-  wrap.appendChild(list);
-
+  const wrap=document.createElement('div'); wrap.className='suggest-wrap';
+  input.parentElement.insertBefore(wrap, input); wrap.appendChild(input);
+  const list=document.createElement('div'); list.className='suggest'; wrap.appendChild(list);
   let results=[], active=-1, lastQuery='';
 
   const render=(items)=>{
-    list.innerHTML='';
-    if(!items.length){ list.classList.remove('show'); return; }
+    list.innerHTML=''; if(!items.length){ list.classList.remove('show'); return; }
     items.slice(0,100).forEach((p,idx)=>{
       const div=document.createElement('div'); div.className='suggest-item'; div.dataset.idx=idx;
-      const c=document.createElement('span'); c.className='suggest-code'; c.textContent=p.codigo;
-      const d=document.createElement('span'); d.textContent=p.descricao;
-      const pr=document.createElement('span'); pr.className='suggest-price'; pr.textContent=BRL(p.valor);
-      div.appendChild(c); div.appendChild(d); div.appendChild(pr);
+      div.innerHTML = `<span class="suggest-code">${p.codigo}</span><span>${p.descricao}</span><span class="suggest-price">${BRL(p.valor)}</span>`;
       div.addEventListener('mousedown',(ev)=>{ ev.preventDefault(); choose(idx); });
       list.appendChild(div);
     });
-    list.classList.add('show');
-    active=-1;
+    list.classList.add('show'); active=-1;
   };
-
   const choose=(idx)=>{
     const p=results[idx]; if(!p) return;
     const tr=rowRef.closest('tr');
     tr.querySelector('.codigo').value=p.codigo;
     tr.querySelector('.desc').value=p.descricao;
     tr.querySelector('.valor').value=p.valor;
-    list.classList.remove('show');
-    calcTotal();
+    list.classList.remove('show'); calcTotal();
   };
-
   const keyNav=(ev)=>{
     if(!list.classList.contains('show')) return;
-    const max=results.length-1;
-    const items=[...list.querySelectorAll('.suggest-item')];
+    const max=results.length-1; const items=[...list.querySelectorAll('.suggest-item')];
     if(ev.key==='ArrowDown'){ ev.preventDefault(); active=Math.min(max,active+1); }
     else if(ev.key==='ArrowUp'){ ev.preventDefault(); active=Math.max(0,active-1); }
     else if(ev.key==='Enter'){ ev.preventDefault(); if(active>=0) choose(active); return; }
@@ -520,18 +505,12 @@ function makeSuggestUI(input, rowRef){
     items.forEach((el,i)=>el.classList.toggle('active',i===active));
     if(active>=0){ items[active].scrollIntoView({block:'nearest'}); }
   };
-
   const doFilter=()=>{
-    const q=input.value.trim().toLowerCase();
-    if(q===lastQuery) return;
-    lastQuery=q;
+    const q=input.value.trim().toLowerCase(); if(q===lastQuery) return; lastQuery=q;
     if(!q){ list.classList.remove('show'); return; }
-    results = itensBase.filter(p=>{
-      return p.codigo.toLowerCase().includes(q) || p.descricao.toLowerCase().includes(q);
-    });
+    results = itensBase.filter(p=> p.codigo.toLowerCase().includes(q) || p.descricao.toLowerCase().includes(q) );
     render(results);
   };
-
   input.addEventListener('input',doFilter);
   input.addEventListener('keydown',keyNav);
   input.addEventListener('blur',()=>setTimeout(()=>list.classList.remove('show'),150));
@@ -592,14 +571,17 @@ function calcTotal(){
     const s=q*v; subtotal+=s;
     tr.querySelector('.sub').textContent=BRL(s);
   });
-  const desc=clamp(parseFloat($('#desc-perc').value),0,100);
+
+  const descValor=Math.max(0, parseFloat($('#desc-valor').value)||0); // desconto em R$
   const frete=Math.max(0, parseFloat($('#frete').value)||0);
-  const total=Math.max(0, subtotal*(1-(desc/100)) + frete);
-  $('#desc-perc').value = desc;
-  $('#frete').value = frete;
+  const total=Math.max(0, subtotal - descValor + frete); // aplicado no total (subtotal) + frete
+
+  $('#desc-valor').value = (Math.round(descValor*100)/100).toFixed(2);
+  $('#frete').value = (Math.round(frete*100)/100).toFixed(2);
   $('#subtotal').textContent=BRL(subtotal);
   $('#total-geral').textContent=BRL(total);
-  return {subtotal,total,descPerc:desc,frete};
+
+  return {subtotal,total,descValor,frete};
 }
 
 /* ========= Fluxo ========= */
@@ -744,7 +726,7 @@ function exportXLSXFrom(o){
     ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
     ['Município/UF',`${o.municipio||''} - ${o.uf||''}`],
     ['CEP',o.cep||''],['Observações',o.obs||'-'],
-    ['Subtotal',o.subtotal||0],['Desconto (%)',o.descPerc||0],['Frete',o.frete||0],['TOTAL',o.total||0],
+    ['Subtotal',o.subtotal||0],['Desconto (R$)',o.descValor||0],['Frete',o.frete||0],['TOTAL',o.total||0],
     ['Fluxo',o.status||'Supervisor Diversey']
   ]);
   ws2['!cols']=[{wch:18},{wch:60}];
@@ -804,7 +786,7 @@ async function baixarPDFFrom(o){
   let ly = fy + 14;
   [
     `Subtotal: ${BRL(o.subtotal||0)}`,
-    `Desconto: ${(o.descPerc||0).toFixed(2)}% (${BRL((o.subtotal||0)*(Number(o.descPerc||0)/100))})`,
+    `Desconto: ${BRL(o.descValor||0)}`,
     `Frete: ${BRL(o.frete||0)}`,
     `TOTAL: ${BRL(o.total||0)}`,
     `Fluxo: ${o.status||'Supervisor Diversey'}`
@@ -913,7 +895,7 @@ function abrirLocal(num){
   $('#req-num').value=o.numero;
   $('#tecnico').value=o.tecnico; preencherEndereco(o.tecnico);
   $('#obs').value=o.obs||'';
-  $('#desc-perc').value=o.descPerc||0;
+  $('#desc-valor').value=o.descValor||0;
   $('#frete').value=o.frete||0;
   const tbody=$('#tabela-itens tbody'); tbody.innerHTML='';
   (o.itens||[]).forEach(it=>addRow(it));
@@ -925,7 +907,7 @@ function getOrder(){ const it=collectItems(), c=calcTotal(); return {
   numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
   tecnico:$('#tecnico').value, endereco:$('#endereco').value, bairro:$('#bairro').value,
   municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value, obs:$('#obs').value,
-  itens:it, subtotal:c.subtotal, total:c.total, descPerc:c.descPerc, frete:c.frete,
+  itens:it, subtotal:c.subtotal, total:c.total, descValor:c.descValor, frete:c.frete,
   status:'Supervisor Diversey'
 };}
 function exportXLSX(){ exportXLSXFrom(getOrder()); }
@@ -947,7 +929,7 @@ async function listarGlobalExcel(){
     uf:r.UF,
     cep:r.CEP,
     subtotal:Number(r.Subtotal||0),
-    descPerc:Number(r.Desconto||0),
+    descValor:Number(r.Desconto||0),     // mapeia o campo de desconto para valor em R$
     frete:Number(r.Frete||0),
     total:Number(r.Total||0),
     status:r.Status||'Supervisor Diversey',
@@ -967,7 +949,7 @@ async function atualizarStatusGlobal(numero, novoStatus){
 function novaSolicitacao(){
   $('#tecnico').value=''; $('#endereco').value=''; $('#bairro').value='';
   $('#municipio').value=''; $('#uf').value=''; $('#cep').value='';
-  $('#obs').value=''; $('#desc-perc').value=0; $('#frete').value=0;
+  $('#obs').value=''; $('#desc-valor').value=0; $('#frete').value=0;
   $('#tabela-itens tbody').innerHTML='';
   gerarNumero(); addRow(); toast('Nova solicitação iniciada 🔄');
 }
@@ -1147,7 +1129,8 @@ function showAuditModal(report, {onIgnoreSend}={}){
     const parts = Object.entries(counts).map(([k,v])=>(k==='block'?'bloqueios':'avisos')+': '+v).join(' • ');
     sum.textContent = `Foram encontradas ${report.issues.length} ocorrências — ${parts}.`;
     report.issues.forEach(it=>{
-      const div=document.createElement('div'); div.className='issue';
+      const div=document.createElement('div');
+      div.className='issue';
       div.textContent = '• ' + it.msg;
       list.appendChild(div);
     });
