@@ -94,13 +94,12 @@ select.status.flow-ent{background:var(--ok)}
 .suggest-code{font-weight:700; min-width:62px}
 .suggest-price{margin-left:auto; color:var(--muted); font-size:12px}
 
-/* ====== ADIÇÃO: congelar linha/coluna no HISTÓRICO ====== */
-#tabela-hist thead th { z-index: 3; }                 /* cabeçalho acima das células */
+/* ====== congelar linha/coluna no HISTÓRICO ====== */
+#tabela-hist thead th { z-index: 3; }
 #tabela-hist th:first-child,
 #tabela-hist td:first-child {
   position: sticky; left: 0; z-index: 2; background: var(--card);
 }
-/* Se quiser o cabeçalho colado no topo da janela, troque para: #tabela-hist thead th { top:0 } */
 </style>
 </head>
 <body>
@@ -192,12 +191,18 @@ select.status.flow-ent{background:var(--ok)}
 
   <!-- HISTÓRICO -->
   <section class="card" id="hist" style="display:none">
-    <h2>📚 Mostrar Histórico</h2>
+    <h2>📚 Histórico</h2>
 
     <div class="hist-filtros" style="align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="f-num" placeholder="Filtrar por Nº">
-        <input id="f-data" type="date" placeholder="Data">
+        <!-- Substituí o filtro por data por Mês/Ano -->
+        <select id="f-mes" title="Mês" style="min-width:120px">
+          <option value="">Mês (todos)</option>
+        </select>
+        <select id="f-ano" title="Ano" style="min-width:110px">
+          <option value="">Ano (todos)</option>
+        </select>
         <input id="f-tec" placeholder="Técnico">
         <select id="f-status">
           <option value="">Fluxo (todos)</option>
@@ -269,7 +274,9 @@ function fmtDataSolic(data){
   return data;
 }
 
-/* ===== ADIÇÃO: comparador para mais novos primeiro ===== */
+/* ===== meses (abreviações PT-BR) ===== */
+const MESES = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+/* ===== comparador: mais novos primeiro ===== */
 const byRecentFirst = (a,b) =>
   (b.data || '').localeCompare(a.data || '') ||
   (b.numero || '').localeCompare(a.numero || '');
@@ -405,8 +412,7 @@ const itensBase = [
   {"codigo":"CS120","descricao":"Etiqueta Painel","valor":69.00}
 ];
 
-
-/* ========= Técnicos (ordenados alfabeticamente) ========= */
+/* ========= Técnicos ========= */
 const tecnicosBase={
   "Antonio Ferreira De Santana Filho":{"endereco":"Av Curió - Campanário, Ap 510 Bloco B","bairro":"","cep":"09.925-000","municipio":"Diadema","uf":"SP"},
   "Antonio Rocker":{"endereco":"Rua Estoril 131","bairro":"Veleiros","cep":"47.730-900","municipio":"São Paulo","uf":"SP"},
@@ -590,7 +596,7 @@ function collectItems(){
   return itens;
 }
 
-/* ========= Totais (Desconto em R$ aplicado no total) ========= */
+/* ========= Totais ========= */
 function calcTotal(){
   let subtotal=0;
   $$('#tabela-itens tbody tr').forEach(tr=>{
@@ -603,7 +609,6 @@ function calcTotal(){
   const frete     = Math.max(0, parseFloat($('#frete').value)||0);
   const total     = Math.max(0, subtotal - descValor + frete);
   $('#desc-valor').value = descValor;
-  '#frete'
   $('#frete').value = frete;
   $('#subtotal').textContent=BRL(subtotal);
   $('#total-geral').textContent=BRL(total);
@@ -675,9 +680,17 @@ function bindSelectAll(){
 }
 
 /* ========= Filtros ========= */
+function parseYYYYMMDD(s){
+  // Espera "YYYY-MM-DD"
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');
+  if(!m) return null;
+  const y = +m[1], mo = +m[2]; // 1..12
+  return {year:y, month:mo};
+}
 function aplicaFiltrosLinhas(rows){
   const fnum  = ($('#f-num').value||'').trim().toLowerCase();
-  const fdata = ($('#f-data').value||'').trim();
+  const fmes  = ($('#f-mes').value||'').trim(); // "1".."12" ou ""
+  const fano  = ($('#f-ano').value||'').trim(); // "2025" etc. ou ""
   const ftec  = ($('#f-tec').value||'').trim().toLowerCase();
   const fstat = ($('#f-status').value||'').trim();
 
@@ -692,11 +705,20 @@ function aplicaFiltrosLinhas(rows){
     const tec = (tecEl?.textContent||'').toLowerCase();
     const st  = sel ? sel.value : '';
 
-    const ok =
-      (!fnum  || num.includes(fnum)) &&
-      (!fdata || dat===fdata) &&
-      (!ftec  || tec.includes(ftec)) &&
-      (!fstat || st===fstat);
+    let ok = true;
+    ok = ok && (!fnum  || num.includes(fnum));
+    ok = ok && (!ftec  || tec.includes(ftec));
+    ok = ok && (!fstat || st===fstat);
+
+    if (fmes || fano){
+      const parsed = parseYYYYMMDD(dat);
+      if(!parsed){
+        ok = false;
+      }else{
+        if(fmes) ok = ok && (String(parsed.month)===String(fmes));
+        if(fano) ok = ok && (String(parsed.year)===String(fano));
+      }
+    }
 
     tr.style.display = ok ? '' : 'none';
   });
@@ -704,13 +726,31 @@ function aplicaFiltrosLinhas(rows){
   const anyVisible = [...rows].some(tr=>tr.style.display!=='none');
   $('#hist-empty').style.display = anyVisible ? 'none' : 'block';
 }
+function popularFiltroMesAno(lista){
+  // Preenche meses fixos e anos com base nos dados existentes
+  const selMes = $('#f-mes');
+  const selAno = $('#f-ano');
+  selMes.innerHTML = `<option value="">Mês (todos)</option>` + MESES.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  // Anos encontrados
+  const anos = new Set();
+  (lista||[]).forEach(o=>{
+    const p = parseYYYYMMDD(o.data);
+    if(p) anos.add(p.year);
+  });
+  const arrAnos = [...anos].sort((a,b)=>b-a);
+  selAno.innerHTML = `<option value="">Ano (todos)</option>` + arrAnos.map(y=>`<option>${y}</option>`).join('');
+}
 function bindFiltros(){
-  ['#f-num','#f-data','#f-tec','#f-status'].forEach(id=>{
+  ['#f-num','#f-mes','#f-ano','#f-tec','#f-status'].forEach(id=>{
     $(id).addEventListener('input',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
     $(id).addEventListener('change',()=>aplicaFiltrosLinhas($$('#tabela-hist tbody tr')));
   });
   $('#f-limpar').addEventListener('click',()=>{
-    $('#f-num').value=''; $('#f-data').value=''; $('#f-tec').value=''; $('#f-status').value='';
+    $('#f-num').value='';
+    $('#f-mes').value='';
+    $('#f-ano').value='';
+    $('#f-tec').value='';
+    $('#f-status').value='';
     aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
   });
 }
@@ -735,7 +775,6 @@ function exportXLSXFrom(o){
   ws1['!cols']=[{wch:22},{wch:18},{wch:30},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Itens');
 
-  // Resumo com Tipo de Envio e Desconto R$
   const ws2=XLSX.utils.aoa_to_sheet([
     ['Número',o.numero],
     ['Data',fmtDataSolic(o.data)],
@@ -858,10 +897,11 @@ function montarHistoricoLocal(){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
   let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
 
-  /* ===== ADIÇÃO: ordena do mais novo para o mais antigo ===== */
   lista.sort(byRecentFirst);
-
   $('#hist').style.display=lista.length?'block':'none';
+
+  // Popular Mês/Ano com base na lista LOCAL
+  popularFiltroMesAno(lista);
 
   for(const o of lista){
     const tr=document.createElement('tr');
@@ -1017,12 +1057,13 @@ function boot(){
     if(getModo()==='global'){
       try{
         let lista=await listarGlobalExcel();
-
-        /* ===== ADIÇÃO: ordenar mais novos primeiro (GLOBAL) ===== */
         lista.sort(byRecentFirst);
-
         if(!lista.length){ hist.style.display='none'; return; }
         hist.style.display='block';
+
+        // Popular Mês/Ano com base na lista GLOBAL
+        popularFiltroMesAno(lista);
+
         for(const o of lista){
           const tr=document.createElement('tr');
 
