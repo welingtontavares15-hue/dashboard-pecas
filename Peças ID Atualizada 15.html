@@ -15,8 +15,7 @@
 :root{
   --bg:#0f172a;--card:#111827;--text:#e5e7eb;--muted:#9ca3af;--accent:#3b82f6;
   --ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--border:#334155;--shadow:0 4px 20px rgba(0,0,0,.2);
-  --info:#06b6d4; /* ciano para Fornecedor */
-  --step:#8b5cf6; /* violeta para Rota */
+  --info:#06b6d4; --step:#8b5cf6;
 }
 :root.light{
   --bg:#eef8f1; --card:#ffffff; --text:#111827; --muted:#475569; --accent:#2563eb;
@@ -58,13 +57,9 @@ td input, td select{width:100%}
 .total-box input{width:120px;text-align:right}
 .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--card);border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:50}
 .toast.show{display:block}
-
-/* validação & auditoria (somente para outros campos) */
 tr.row-error{outline:2px solid var(--danger); background:rgba(239,68,68,.08)}
 .small-hint{color:var(--muted); font-size:12px; margin-top:6px}
 kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-size:12px}
-
-/* modal relatório */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:60}
 .modal{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);max-width:900px;width:96%;padding:16px}
 .modal h3{margin:0 0 10px 0}
@@ -73,24 +68,16 @@ kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;bord
 .modal .issue:last-child{border-bottom:none}
 .modal .muted{color:var(--muted);font-size:12px}
 .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-
-/* === FLUXO (cores no SELECT) === */
 select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
-select.status.flow-sup{background:var(--warn)}      /* Supervisor Diversey */
-select.status.flow-forn{background:var(--info)}     /* Fornecedor */
-select.status.flow-rota{background:var(--step)}     /* Rota de Entrega */
-select.status.flow-ent{background:var(--ok)}        /* Entregue */
-
-/* filtros do histórico */
+select.status.flow-sup{background:var(--warn)}
+select.status.flow-forn{background:var(--info)}
+select.status.flow-rota{background:var(--step)}
+select.status.flow-ent{background:var(--ok)}
 .hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .hist-filtros input,.hist-filtros select{max-width:220px}
 .hist-empty{color:var(--muted); padding:10px 0}
-
-/* Ações do histórico alinhadas à direita (Excel/PDF lado a lado) */
 #tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end}
-.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)} /* corrigido */
-
-/* === AUTOCOMPLETE de Peças === */
+.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)}
 .suggest-wrap{position:relative}
 .suggest{
   position:absolute; z-index:20; left:0; right:0; top:calc(100% + 4px);
@@ -98,9 +85,7 @@ select.status.flow-ent{background:var(--ok)}        /* Entregue */
   box-shadow:var(--shadow); max-height:260px; overflow:auto; display:none;
 }
 .suggest.show{display:block}
-.suggest-item{
-  padding:8px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;
-}
+.suggest-item{padding:8px 10px; cursor:pointer; display:flex; gap:8px; align-items:center;}
 .suggest-item:hover, .suggest-item.active{background:rgba(255,255,255,.06)}
 .suggest-code{font-weight:700; min-width:62px}
 .suggest-price{margin-left:auto; color:var(--muted); font-size:12px}
@@ -114,7 +99,7 @@ select.status.flow-ent{background:var(--ok)}        /* Entregue */
   </div>
   <div class="toolbar">
     <button id="btn-modo-local">💾 Local</button>
-    <button id="btn-modo-global"☁️ Global</button>
+    <button id="btn-modo-global">☁️ Global</button>
     <button id="btn-theme">🌗 Tema</button>
     <button id="btn-auditar">🩺 Checar Consistência</button>
     <button id="btn-xlsx">📊 Excel</button>
@@ -186,7 +171,6 @@ select.status.flow-ent{background:var(--ok)}        /* Entregue */
     </div>
   </section>
 
-  <!-- HISTÓRICO COM SELEÇÃO E EXCLUSÃO -->
   <section class="card" id="hist" style="display:none">
     <h2>📚 Mostrar Histórico</h2>
 
@@ -232,7 +216,6 @@ select.status.flow-ent{background:var(--ok)}        /* Entregue */
   </section>
 </main>
 
-<!-- Modal Relatório -->
 <div id="modal-audit" class="modal-backdrop">
   <div class="modal">
     <h3>Relatório de Consistência</h3>
@@ -265,6 +248,15 @@ function fmtDataSolic(data){
     const [y,m,d]=data.split('-'); return `${d}/${m}/${y}`;
   }
   return data;
+}
+
+/* Sanitize para nomes de arquivo (remove caracteres inválidos) */
+function fileSafe(str){
+  return String(str||'')
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')  // remove acentos
+    .replace(/[\\/:*?"<>|]/g,' ')                      // inválidos no Windows
+    .replace(/\s+/g,' ')                                // colapsa espaços
+    .trim();
 }
 
 /* ========= Config ========= */
@@ -398,8 +390,6 @@ const itensBase = [
   {"codigo":"CS120","descricao":"Etiqueta Painel","valor":69.00}
 ];
 
-
-
 /* ========= Técnicos ========= */
 const tecnicosBase={
   "Ney Goncalves Cardoso":{"endereco":"Rua Juqueri,266","bairro":"Irajá","cep":"21.371-370","municipio":"Rio de Janeiro","uf":"RJ"},
@@ -471,7 +461,7 @@ function fillRowFromItem(tr,item){
   calcTotal();
 }
 
-/* ========= ID Máquina (sem bloqueio) ========= */
+/* ========= ID Máquina ========= */
 function normalizeId(value){ return String(value ?? '').trim(); }
 function wireIdValidation(input){
   const run = ()=>{ input.value = normalizeId(input.value); };
@@ -480,7 +470,7 @@ function wireIdValidation(input){
   input.title = 'ID da Máquina — qualquer formato é aceito.';
 }
 
-/* ========= AUTOCOMPLETE de peças ========= */
+/* ========= AUTOCOMPLETE ========= */
 function makeSuggestUI(input, rowRef){
   const wrap=document.createElement('div');
   wrap.className='suggest-wrap';
@@ -726,17 +716,9 @@ function bindFiltros(){
 /* ========= Exports ========= */
 function orderToAOA(o){
   const dataSolic = fmtDataSolic(o.data);
-  // Cabeçalho com Técnico (3ª coluna)
   const head=[
-    'Nº Solicitação',
-    'Data da Solicitação',
-    'Técnico',
-    'Código',
-    'ID Máquina',
-    'Qtd',
-    'Descrição',
-    'Valor Unitário',
-    'Subtotal'
+    'Nº Solicitação','Data da Solicitação','Técnico',
+    'Código','ID Máquina','Qtd','Descrição','Valor Unitário','Subtotal'
   ];
   const rows=(o.itens||[]).map(it=>[
     o.numero || '',
@@ -753,13 +735,10 @@ function orderToAOA(o){
 }
 function exportXLSXFrom(o){
   const wb=XLSX.utils.book_new();
-  // Itens (com Técnico)
   const ws1=XLSX.utils.aoa_to_sheet(orderToAOA(o));
-  //            Nº        Data       Técnico    Código     ID Máquina   Qtd   Descrição    Valor Unit  Subtotal
   ws1['!cols']=[{wch:22},{wch:18},{wch:30},{wch:10},{wch:28},{wch:6},{wch:46},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'Itens');
 
-  // Resumo
   const ws2=XLSX.utils.aoa_to_sheet([
     ['Número',o.numero],['Data',fmtDataSolic(o.data)],['Técnico',o.tecnico],
     ['Endereço',`${o.endereco||''}, ${o.bairro||''}`],
@@ -774,6 +753,8 @@ function exportXLSXFrom(o){
   XLSX.writeFile(wb,`${o.numero||'SOLICITACAO'}.xlsx`);
   toast('Excel (.xlsx) gerado ✅');
 }
+
+/* ======== PDF (com número + técnico no nome do arquivo) ======== */
 async function baixarPDFFrom(o){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'pt', format:'a4' });
@@ -830,7 +811,11 @@ async function baixarPDFFrom(o){
   ].forEach(s => { doc.text(s, M, ly); ly += 14; });
 
   const blob = doc.output('blob');
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`${o.numero||'SOLICITACAO'}.pdf`;
+  const a=document.createElement('a');
+  const nomeNumero = fileSafe(o.numero || 'SOLICITACAO');
+  const nomeTec = fileSafe(o.tecnico || 'SEM_TECNICO');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${nomeNumero}_${nomeTec}.pdf`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
   toast('PDF gerado ✅');
 }
@@ -845,7 +830,7 @@ function salvarLocal(){
     numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
     tecnico, endereco:$('#endereco').value, bairro:$('#bairro').value, municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value,
     obs:$('#obs').value, ...tot, itens,
-    status:'Supervisor Diversey' // 🔰 inicia o fluxo automaticamente
+    status:'Supervisor Diversey'
   };
   const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   const i=lista.findIndex(o=>o.numero===dados.numero);
@@ -964,7 +949,7 @@ async function listarGlobalExcel(){
     subtotal:Number(r.Subtotal||0),
     descPerc:Number(r.Desconto||0),
     frete:Number(r.Frete||0),
-    total:Number(r.Total||0),            // ✅ corrigido
+    total:Number(r.Total||0),
     status:r.Status||'Supervisor Diversey',
     itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
   }));
@@ -1125,7 +1110,6 @@ function auditarPedido(){
     const val = Math.max(0, parseFloat(tr.querySelector('.valor').value)||0);
     const desc = (tr.querySelector('.desc').value||'').trim();
 
-    // IDs aceitos livremente
     if(!(val>0)){ issues.push({row,type:'Preço inválido',level:'warn',msg:`Linha ${row}: valor unitário não preenchido ou zero.`}); tr.classList.add('row-error'); }
     if(!(qtd>=1)){ issues.push({row,type:'Qtd inválida',level:'warn',msg:`Linha ${row}: quantidade deve ser ≥ 1.`}); tr.classList.add('row-error'); }
     if(!desc){ issues.push({row,type:'Descrição faltando',level:'warn',msg:`Linha ${row}: descrição do item está vazia.`}); tr.classList.add('row-error'); }
@@ -1163,8 +1147,7 @@ function showAuditModal(report, {onIgnoreSend}={}){
     const parts = Object.entries(counts).map(([k,v])=>(k==='block'?'bloqueios':'avisos')+': '+v).join(' • ');
     sum.textContent = `Foram encontradas ${report.issues.length} ocorrências — ${parts}.`;
     report.issues.forEach(it=>{
-      const div=document.createElement('div');
-      div.className='issue';
+      const div=document.createElement('div'); div.className='issue';
       div.textContent = '• ' + it.msg;
       list.appendChild(div);
     });
@@ -1183,4 +1166,3 @@ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded
 </script>
 </body>
 </html>
-
