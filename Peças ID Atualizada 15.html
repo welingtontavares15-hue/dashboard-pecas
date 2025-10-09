@@ -275,7 +275,7 @@ const API_UPDATE_STATUS = 'COLE_AQUI_URL_DO_FLOW_STATUS';
 const getModo = () => localStorage.getItem(LS.MODO) || 'local';
 const setModo = m => { localStorage.setItem(LS.MODO,m); $('#badge-modo').textContent='Modo: '+m.toUpperCase(); toast(m==='global'?'Modo GLOBAL (Excel) ativo':'Modo LOCAL ativo'); };
 
-/* ========= Peças (base) — 119 itens ========= */
+/* ========= Peças (base) — 120 itens ========= */
 const itensBase = [
   {"codigo":"CS001","descricao":"Adaptador Braço Lavagem HD-80","valor":225.00},
   {"codigo":"CS002","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-50","valor":175.70},
@@ -395,8 +395,10 @@ const itensBase = [
   {"codigo":"CS116","descricao":"Tubo Saida Bomba De Lavagem HD-80","valor":263.55},
   {"codigo":"CS117","descricao":"Tupo Braço Superior HD-50","valor":52.00},
   {"codigo":"CS118","descricao":"Valvula De Agua HD-80","valor":159.00},
-  {"codigo":"CS119","descricao":"Valvula Solenoide HDW-200 NT","valor":172.50}
+  {"codigo":"CS119","descricao":"Valvula Solenoide HDW-200 NT","valor":172.50},
+  {"codigo":"CS120","descricao":"Etiqueta Painel","valor":69.00}
 ];
+
 
 
 /* ========= Técnicos ========= */
