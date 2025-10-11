@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Ações e Fundos Imobiliários</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050816;
+      --card: rgba(16, 24, 40, 0.72);
+      --card-solid: #111827;
+      --accent: #38bdf8;
+      --accent-strong: #0ea5e9;
+      --text: #f8fafc;
+      --muted: #cbd5f5;
+      --positive: #22c55e;
+      --negative: #ef4444;
+      --border: rgba(148, 163, 184, 0.25);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.25), transparent 45%),
+                  radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.18), transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 32px 20px 48px;
+    }
+
+    header {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      border-radius: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 span {
+      font-size: 1.8rem;
+    }
+
+    .market-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .market-meta strong {
+      color: var(--text);
+    }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      gap: 24px;
+    }
+
+    .grid-panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
+    }
+
+    .panel h2 {
+      margin: 0 0 16px;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel h2 span {
+      font-size: 0.9rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.03em;
+    }
+
+    tbody tr {
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    tbody tr:hover {
+      transform: translateY(-2px);
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    td {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    td:last-child,
+    th:last-child {
+      text-align: right;
+    }
+
+    .change {
+      font-weight: 600;
+    }
+
+    .change.positive {
+      color: var(--positive);
+    }
+
+    .change.negative {
+      color: var(--negative);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .trend-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 12px;
+      padding: 8px 12px;
+    }
+
+    .sparkline {
+      display: inline-flex;
+      gap: 4px;
+      align-items: flex-end;
+      height: 28px;
+    }
+
+    .sparkline span {
+      width: 3px;
+      border-radius: 999px 999px 0 0;
+      background: rgba(56, 189, 248, 0.55);
+      transition: height 0.3s ease;
+    }
+
+    footer {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: rgba(203, 213, 225, 0.75);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    footer strong {
+      color: var(--accent-strong);
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 24px 16px 40px;
+      }
+
+      header,
+      .panel {
+        padding: 20px;
+      }
+
+      thead {
+        display: none;
+      }
+
+      table,
+      tbody,
+      tr,
+      td {
+        display: block;
+        width: 100%;
+      }
+
+      tbody tr {
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      }
+
+      td {
+        text-align: left !important;
+        padding: 8px 0;
+      }
+
+      td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        margin-bottom: 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>📈</span> Mercado em Tempo Real</h1>
+    <div class="market-meta">
+      <div class="badge" id="market-status">Bolsa Aberta</div>
+      <div class="trend-indicator">
+        <span>Ibovespa Futuro</span>
+        <strong id="market-trend">+0,84%</strong>
+      </div>
+      <div>
+        Última atualização: <strong id="last-update">--:--:--</strong>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="grid-panels">
+      <article class="panel">
+        <h2>Ações em Destaque <span>Principais ativos negociados</span></h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Ativo</th>
+              <th>Preço</th>
+              <th>Variação</th>
+              <th>Volume</th>
+            </tr>
+          </thead>
+          <tbody id="stocks-body"></tbody>
+        </table>
+      </article>
+
+      <article class="panel">
+        <h2>Fundos Imobiliários <span>Carteira recomendada</span></h2>
+        <table>
+          <thead>
+            <tr>
+              <th>FII</th>
+              <th>Cota</th>
+              <th>Variação</th>
+              <th>Dividend Yield</th>
+            </tr>
+          </thead>
+          <tbody id="fiis-body"></tbody>
+        </table>
+      </article>
+    </section>
+
+    <section class="panel">
+      <h2>Heatmap intraday <span>Representação do movimento recente</span></h2>
+      <div id="heatmap" class="sparkline" aria-label="Mapa de calor dos ativos"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      Dados simulados para fins educacionais. Valores atualizados automaticamente a cada 5 segundos.
+    </div>
+    <div>
+      Tendência do dia: <strong id="day-trend">Alta moderada</strong>
+    </div>
+  </footer>
+
+  <script>
+    const currencyFormatter = new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+    });
+
+    const percentFormatter = new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+    const stocks = [
+      { ticker: 'PETR4', name: 'Petrobras PN', price: 36.72, prevPrice: 36.72, volume: 1_450_000, volatility: 0.018 },
+      { ticker: 'VALE3', name: 'Vale ON', price: 67.45, prevPrice: 67.45, volume: 980_500, volatility: 0.016 },
+      { ticker: 'ITUB4', name: 'Itaú Unibanco PN', price: 28.32, prevPrice: 28.32, volume: 1_120_000, volatility: 0.012 },
+      { ticker: 'BBDC4', name: 'Bradesco PN', price: 14.18, prevPrice: 14.18, volume: 880_300, volatility: 0.011 },
+      { ticker: 'WEGE3', name: 'Weg ON', price: 37.92, prevPrice: 37.92, volume: 650_400, volatility: 0.014 },
+      { ticker: 'ABEV3', name: 'Ambev ON', price: 14.75, prevPrice: 14.75, volume: 790_250, volatility: 0.013 }
+    ];
+
+    const fiis = [
+      { ticker: 'HGLG11', name: 'CSHG Logística', price: 169.85, prevPrice: 169.85, dividendYield: 0.78, volatility: 0.008 },
+      { ticker: 'MXRF11', name: 'Maxi Renda', price: 11.36, prevPrice: 11.36, dividendYield: 0.92, volatility: 0.009 },
+      { ticker: 'VISC11', name: 'Vinci Shopping', price: 107.42, prevPrice: 107.42, dividendYield: 0.74, volatility: 0.007 },
+      { ticker: 'KNRI11', name: 'Kinea Renda Imobiliária', price: 151.60, prevPrice: 151.60, dividendYield: 0.71, volatility: 0.006 },
+      { ticker: 'XPLG11', name: 'XP Log', price: 110.12, prevPrice: 110.12, dividendYield: 0.69, volatility: 0.007 },
+      { ticker: 'BTLG11', name: 'BTG Logística', price: 114.75, prevPrice: 114.75, dividendYield: 0.73, volatility: 0.007 }
+    ];
+
+    const renderRow = (item, type) => {
+      const change = ((item.price - item.prevPrice) / item.prevPrice) * 100 || 0;
+      const changeClass = change >= 0 ? 'positive' : 'negative';
+      const changeLabel = `${change >= 0 ? '+' : ''}${percentFormatter.format(change)}%`;
+
+      if (type === 'stock') {
+        return `
+          <tr data-ticker="${item.ticker}">
+            <td data-label="Ativo">
+              <strong>${item.ticker}</strong><br />
+              <small style="color: var(--muted); font-size: 0.8rem;">${item.name}</small>
+            </td>
+            <td data-label="Preço">${currencyFormatter.format(item.price)}</td>
+            <td data-label="Variação"><span class="change ${changeClass}">${changeLabel}</span></td>
+            <td data-label="Volume">${item.volume.toLocaleString('pt-BR')}</td>
+          </tr>
+        `;
+      }
+
+      return `
+        <tr data-ticker="${item.ticker}">
+          <td data-label="FII">
+            <strong>${item.ticker}</strong><br />
+            <small style="color: var(--muted); font-size: 0.8rem;">${item.name}</small>
+          </td>
+          <td data-label="Cota">${currencyFormatter.format(item.price)}</td>
+          <td data-label="Variação"><span class="change ${changeClass}">${changeLabel}</span></td>
+          <td data-label="Dividend Yield">${percentFormatter.format(item.dividendYield)}%</td>
+        </tr>
+      `;
+    };
+
+    function renderTables() {
+      document.getElementById('stocks-body').innerHTML = stocks.map((item) => renderRow(item, 'stock')).join('');
+      document.getElementById('fiis-body').innerHTML = fiis.map((item) => renderRow(item, 'fii')).join('');
+    }
+
+    function updateInstrument(instrument, type) {
+      const drift = (Math.random() * 2 - 1) * instrument.volatility;
+      const newPrice = Math.max(instrument.price * (1 + drift), 0.01);
+      instrument.prevPrice = instrument.price;
+      instrument.price = parseFloat(newPrice.toFixed(2));
+
+      if (type === 'stock') {
+        const extraVolume = Math.round((Math.random() * 0.08 + 0.02) * instrument.volume);
+        instrument.volume += extraVolume;
+      } else {
+        const variation = (Math.random() * 0.06 - 0.02);
+        instrument.dividendYield = Math.max(0.4, Math.min(instrument.dividendYield + variation, 1.25));
+      }
+    }
+
+    function refreshUI() {
+      stocks.forEach((stock) => updateInstrument(stock, 'stock'));
+      fiis.forEach((fii) => updateInstrument(fii, 'fii'));
+      renderTables();
+      updateHeatmap();
+      updateTimestamps();
+      updateTrend();
+    }
+
+    function updateHeatmap() {
+      const heatmap = document.getElementById('heatmap');
+      const combined = [...stocks, ...fiis];
+      heatmap.innerHTML = combined
+        .map((item) => {
+          const change = ((item.price - item.prevPrice) / item.prevPrice) * 100 || 0;
+          const height = Math.min(28, Math.max(6, 14 + change * 1.2));
+          const color = change >= 0
+            ? `linear-gradient(180deg, rgba(34,197,94,0.75), rgba(22,163,74,0.35))`
+            : `linear-gradient(180deg, rgba(248,113,113,0.75), rgba(239,68,68,0.4))`;
+          return `<span title="${item.ticker}: ${change >= 0 ? '+' : ''}${percentFormatter.format(change)}%" style="height:${height}px;background:${color}"></span>`;
+        })
+        .join('');
+    }
+
+    function updateTimestamps() {
+      const now = new Date();
+      const formatted = now.toLocaleTimeString('pt-BR', { hour12: false });
+      document.getElementById('last-update').textContent = formatted;
+    }
+
+    function updateTrend() {
+      const aggregated = [...stocks, ...fiis]
+        .map((item) => (item.price - item.prevPrice) / item.prevPrice);
+      const avgChange = aggregated.reduce((acc, value) => acc + value, 0) / aggregated.length;
+      const trendElement = document.getElementById('market-trend');
+      const statusElement = document.getElementById('day-trend');
+
+      const percentChange = avgChange * 100;
+      trendElement.textContent = `${percentChange >= 0 ? '+' : ''}${percentFormatter.format(percentChange)}%`;
+
+      if (percentChange > 0.6) {
+        statusElement.textContent = 'Alta forte';
+      } else if (percentChange > 0.2) {
+        statusElement.textContent = 'Alta moderada';
+      } else if (percentChange > -0.2) {
+        statusElement.textContent = 'Estabilidade';
+      } else if (percentChange > -0.6) {
+        statusElement.textContent = 'Baixa leve';
+      } else {
+        statusElement.textContent = 'Baixa acentuada';
+      }
+    }
+
+    renderTables();
+    updateHeatmap();
+    updateTimestamps();
+    updateTrend();
+
+    setInterval(refreshUI, 5000);
+  </script>
+</body>
+</html>
