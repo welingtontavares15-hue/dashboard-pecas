@@ -97,15 +97,29 @@ select.status.flow-ent{background:var(--ok)}
 /* === Agenda Semanal === */
 .agenda-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .agenda-actions{display:flex;gap:8px;flex-wrap:wrap}
-.agenda-form{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.agenda-form{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding:16px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(34,197,94,.06))}
 .agenda-form .agenda-field{flex:1 1 180px;display:flex;flex-direction:column;gap:4px}
+.agenda-form .agenda-field label{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .agenda-form button[type="submit"]{align-self:flex-end}
-.agenda-board{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.agenda-column{border:1px dashed var(--border);border-radius:12px;padding:12px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:8px;min-height:140px}
-.agenda-column h3{margin:0;font-size:16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-.agenda-count{color:var(--muted);font-size:12px}
-.agenda-task{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
-.agenda-task.done{opacity:.6}
+.agenda-overview{display:grid;gap:12px;margin-bottom:16px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.agenda-overview .overview-item{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.agenda-overview .overview-item::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(59,130,246,.18),transparent);opacity:.4;pointer-events:none}
+.agenda-overview .overview-item span{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.agenda-overview .overview-item strong{font-size:24px;font-weight:700}
+.agenda-overview .overview-item small{font-size:12px;color:var(--muted)}
+.agenda-board{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.agenda-column{border:1px solid var(--border);border-radius:16px;padding:16px;background:linear-gradient(180deg,rgba(15,23,42,.92),rgba(15,23,42,.78));display:flex;flex-direction:column;gap:12px;min-height:160px;position:relative;overflow:hidden}
+.agenda-column::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(59,130,246,.12),rgba(34,197,94,.08));opacity:.5;pointer-events:none}
+.agenda-column h3{margin:0;font-size:18px;display:flex;flex-direction:column;gap:10px;position:relative;z-index:1}
+.agenda-day-label{font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.agenda-count{color:var(--muted);font-size:13px;background:rgba(255,255,255,.06);padding:4px 10px;border-radius:999px;align-self:flex-start;display:inline-flex;gap:6px;align-items:center}
+.agenda-count strong{color:var(--text);font-size:16px}
+.agenda-task{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow);position:relative;z-index:1;transition:transform .15s ease,box-shadow .15s ease}
+.agenda-task:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(15,23,42,.35)}
+.agenda-task.status-planejado{border-left:4px solid var(--accent)}
+.agenda-task.status-andamento{border-left:4px solid var(--info)}
+.agenda-task.status-concluido{border-left:4px solid var(--ok)}
+.agenda-task.done{opacity:.7}
 .agenda-task-header{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600}
 .agenda-time{font-variant-numeric:tabular-nums}
 .agenda-owner{color:var(--muted);font-size:13px;font-weight:500}
@@ -113,7 +127,7 @@ select.status.flow-ent{background:var(--ok)}
 .agenda-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .agenda-footer .task-actions{display:flex;gap:6px}
 .agenda-footer button{font-size:13px;padding:6px 8px}
-.agenda-empty{color:var(--muted);font-size:13px;font-style:italic;margin-top:4px}
+.agenda-empty{color:var(--muted);font-size:13px;font-style:italic;margin-top:4px;position:relative;z-index:1}
 .agenda-status-badge{border-radius:999px;padding:2px 8px;font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
 .agenda-status-planejado{background:rgba(59,130,246,.15);color:var(--accent)}
 .agenda-status-andamento{background:rgba(6,182,212,.18);color:var(--info)}
@@ -228,7 +242,26 @@ select.status.flow-ent{background:var(--ok)}
         <button id="agenda-clear" type="button" class="btn-danger">🧹 Limpar semana</button>
       </div>
     </div>
-    <p class="agenda-hint">Organize e compartilhe as atividades do time por dia, horário e responsável. Os dados ficam salvos somente neste navegador.</p>
+    <p class="agenda-hint">Organize e compartilhe as atividades do time por dia, horário e responsável. A visão abaixo destaca rapidamente o volume da semana e a próxima entrega.</p>
+    <div class="agenda-overview" id="agenda-overview">
+      <div class="overview-item">
+        <span>Total de atividades</span>
+        <strong id="agenda-total">0</strong>
+        <small id="agenda-proxima">Sem atividades agendadas</small>
+      </div>
+      <div class="overview-item">
+        <span>Planejadas</span>
+        <strong id="agenda-planejado">0</strong>
+      </div>
+      <div class="overview-item">
+        <span>Em andamento</span>
+        <strong id="agenda-andamento">0</strong>
+      </div>
+      <div class="overview-item">
+        <span>Concluídas</span>
+        <strong id="agenda-concluido">0</strong>
+      </div>
+    </div>
     <form id="agenda-form" class="agenda-form">
       <div class="agenda-field">
         <label for="agenda-dia">Dia</label>
@@ -238,8 +271,6 @@ select.status.flow-ent{background:var(--ok)}
           <option value="wednesday">Quarta-feira</option>
           <option value="thursday">Quinta-feira</option>
           <option value="friday">Sexta-feira</option>
-          <option value="saturday">Sábado</option>
-          <option value="sunday">Domingo</option>
         </select>
       </div>
       <div class="agenda-field">
@@ -360,18 +391,61 @@ const DIAS_AGENDA = [
   { value:'tuesday',   label:'Terça-feira',   order:2 },
   { value:'wednesday', label:'Quarta-feira',  order:3 },
   { value:'thursday',  label:'Quinta-feira',  order:4 },
-  { value:'friday',    label:'Sexta-feira',   order:5 },
-  { value:'saturday',  label:'Sábado',        order:6 },
-  { value:'sunday',    label:'Domingo',       order:7 }
+  { value:'friday',    label:'Sexta-feira',   order:5 }
 ];
 const MAP_DIA_AGENDA = new Map(DIAS_AGENDA.map(d=>[d.value,d]));
 const STATUS_AGENDA = [
-  { value:'planejado', label:'Planejado', badgeClass:'agenda-status-planejado' },
-  { value:'andamento', label:'Em andamento', badgeClass:'agenda-status-andamento' },
-  { value:'concluido', label:'Concluído', badgeClass:'agenda-status-concluido' }
+  { value:'planejado', label:'Planejado', badgeClass:'agenda-status-planejado', cardClass:'status-planejado' },
+  { value:'andamento', label:'Em andamento', badgeClass:'agenda-status-andamento', cardClass:'status-andamento' },
+  { value:'concluido', label:'Concluído', badgeClass:'agenda-status-concluido', cardClass:'status-concluido' }
 ];
 const MAP_STATUS_AGENDA = new Map(STATUS_AGENDA.map(s=>[s.value,s]));
 let agendaItems = [];
+function sanitizeAgendaItems(){
+  agendaItems = Array.isArray(agendaItems) ? agendaItems.filter(it=>MAP_DIA_AGENDA.has(it.day)) : [];
+}
+function updateAgendaOverview(){
+  const totalEl = document.getElementById('agenda-total');
+  if(!totalEl) return;
+  const planejadoEl = document.getElementById('agenda-planejado');
+  const andamentoEl = document.getElementById('agenda-andamento');
+  const concluidoEl = document.getElementById('agenda-concluido');
+  const proximaEl = document.getElementById('agenda-proxima');
+  const counts = {planejado:0,andamento:0,concluido:0};
+  agendaItems.forEach(it=>{
+    if(MAP_STATUS_AGENDA.has(it.status)) counts[it.status] = (counts[it.status]||0)+1;
+  });
+  totalEl.textContent = agendaItems.length;
+  if(planejadoEl) planejadoEl.textContent = counts.planejado||0;
+  if(andamentoEl) andamentoEl.textContent = counts.andamento||0;
+  if(concluidoEl) concluidoEl.textContent = counts.concluido||0;
+  if(proximaEl){
+    const proximas = agendaItems
+      .filter(it=>MAP_DIA_AGENDA.has(it.day) && it.status!=='concluido')
+      .slice()
+      .sort((a,b)=>{
+        const da = MAP_DIA_AGENDA.get(a.day)?.order ?? 99;
+        const db = MAP_DIA_AGENDA.get(b.day)?.order ?? 99;
+        if(da!==db) return da-db;
+        const ta = a.time || '99:99';
+        const tb = b.time || '99:99';
+        const cmp = ta.localeCompare(tb);
+        if(cmp!==0) return cmp;
+        return (a.task||'').localeCompare(b.task||'', 'pt-BR');
+      });
+    if(proximas.length){
+      const next = proximas[0];
+      const dia = MAP_DIA_AGENDA.get(next.day);
+      const meta=[];
+      if(next.time) meta.push(`às ${next.time}`);
+      if(next.owner) meta.push(next.owner);
+      const metaStr = meta.length ? ' — '+meta.join(' · ') : '';
+      proximaEl.textContent = `${dia?.label||'Dia indefinido'}${metaStr}: ${next.task}`;
+    } else {
+      proximaEl.textContent = 'Sem atividades agendadas';
+    }
+  }
+}
 const agendaId = ()=>'agd-'+Math.random().toString(36).slice(2,9)+Date.now().toString(36);
 const sortAgendaByTime = (a,b)=>{
   const ta = a.time||'';
@@ -386,16 +460,26 @@ const sortAgendaByTime = (a,b)=>{
   }
   return (a.task||'').localeCompare(b.task||'', 'pt-BR');
 };
-function salvarAgenda(){ localStorage.setItem(LS.AGENDA, JSON.stringify(agendaItems)); }
+function salvarAgenda(){
+  sanitizeAgendaItems();
+  localStorage.setItem(LS.AGENDA, JSON.stringify(agendaItems));
+}
 function carregarAgenda(){
   try{
     agendaItems = JSON.parse(localStorage.getItem(LS.AGENDA)||'[]');
     if(!Array.isArray(agendaItems)) agendaItems=[];
   }catch(e){ agendaItems=[]; }
+  const originalLength = agendaItems.length;
+  sanitizeAgendaItems();
+  if(originalLength !== agendaItems.length){
+    localStorage.setItem(LS.AGENDA, JSON.stringify(agendaItems));
+  }
+  updateAgendaOverview();
 }
 function renderAgenda(){
   const board = document.getElementById('agenda-board');
   if(!board) return;
+  sanitizeAgendaItems();
   const grupos = new Map(DIAS_AGENDA.map(d=>[d.value,[]]));
   agendaItems.forEach(it=>{
     const dia = grupos.get(it.day);
@@ -405,9 +489,12 @@ function renderAgenda(){
     const lista = (grupos.get(dia.value)||[]).slice().sort(sortAgendaByTime);
     const count = lista.length;
     const tarefas = count ? lista.map(item=>{
-      const status = MAP_STATUS_AGENDA.get(item.status) || MAP_STATUS_AGENDA.get('planejado');
+      const selectedStatus = MAP_STATUS_AGENDA.has(item.status) ? item.status : 'planejado';
+      item.status = selectedStatus;
+      const status = MAP_STATUS_AGENDA.get(selectedStatus) || MAP_STATUS_AGENDA.get('planejado');
+      const taskClasses = ['agenda-task', status.cardClass, selectedStatus==='concluido'?'done':''].filter(Boolean).join(' ');
       return `
-        <div class="agenda-task${item.status==='concluido'?' done':''}" data-id="${item.id}">
+        <div class="${taskClasses}" data-id="${item.id}">
           <div class="agenda-task-header">
             <span class="agenda-time">${escapeHtml(item.time||'--:--')}</span>
             <span class="agenda-owner">${escapeHtml(item.owner||'Sem responsável')}</span>
@@ -415,7 +502,7 @@ function renderAgenda(){
           <div class="agenda-desc">${escapeHtml(item.task||'')}</div>
           <div class="agenda-footer">
             <select class="agenda-status-control" data-id="${item.id}">
-              ${STATUS_AGENDA.map(st=>`<option value="${st.value}"${st.value===status.value?' selected':''}>${st.label}</option>`).join('')}
+              ${STATUS_AGENDA.map(st=>`<option value="${st.value}"${st.value===selectedStatus?' selected':''}>${st.label}</option>`).join('')}
             </select>
             <div class="task-actions">
               <span class="agenda-status-badge ${status.badgeClass}">${status.label}</span>
@@ -424,12 +511,14 @@ function renderAgenda(){
           </div>
         </div>`;
     }).join('') : `<div class="agenda-empty">Sem atividades planejadas.</div>`;
+    const countBadge = `<span class="agenda-count"><strong>${count}</strong>${count===1?' atividade':' atividades'}</span>`;
     return `<div class="agenda-column" data-day="${dia.value}">
-      <h3>${dia.label}<span class="agenda-count">${count} atividade${count===1?'':'s'}</span></h3>
+      <h3><span class="agenda-day-label">${dia.label}</span>${countBadge}</h3>
       ${tarefas}
     </div>`;
   });
   board.innerHTML = parts.join('');
+  updateAgendaOverview();
 }
 function agendaResumoTexto(){
   if(!agendaItems.length){
@@ -457,8 +546,9 @@ function preencherDiaAtual(){
   if(!sel) return;
   const hoje = new Date();
   const map = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
-  const hojeVal = map[hoje.getDay()] || 'monday';
-  if(MAP_DIA_AGENDA.has(hojeVal)) sel.value = hojeVal;
+  let hojeVal = map[hoje.getDay()] || 'monday';
+  if(!MAP_DIA_AGENDA.has(hojeVal)) hojeVal = 'monday';
+  sel.value = hojeVal;
 }
 function handleAgendaSubmit(ev){
   ev.preventDefault();
@@ -472,14 +562,19 @@ function handleAgendaSubmit(ev){
     toast('Descreva a atividade a ser adicionada.');
     return;
   }
+  let dayValue = MAP_DIA_AGENDA.has(dia.value) ? dia.value : 'monday';
+  if(!MAP_DIA_AGENDA.has(dayValue)) dayValue = 'monday';
+  dia.value = dayValue;
   const owner = resp.value.trim();
+  const statusValue = MAP_STATUS_AGENDA.has(statusSel.value) ? statusSel.value : 'planejado';
+  statusSel.value = statusValue;
   const item={
     id:agendaId(),
-    day:dia.value,
+    day:dayValue,
     time:hora.value,
     owner,
     task:atividade.value.trim(),
-    status:statusSel.value
+    status:statusValue
   };
   agendaItems.push(item);
   salvarAgenda();
