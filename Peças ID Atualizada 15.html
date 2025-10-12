@@ -640,12 +640,18 @@ const OneDriveStore = (()=>{
     const n = parseInt(v,10);
     return Number.isFinite(n) && n>0 ? n : GLOBAL_REFRESH_MIN_DEFAULT;
   }
+  function sanitizeFileName(name){
+    const trimmed = (name||'').trim().replace(/^\/+|\/+$/g,'');
+    if(!trimmed) return '';
+    // normaliza múltiplas barras mantendo subpastas válidas
+    return trimmed.split('/').map(p=>p.trim()).filter(Boolean).join('/');
+  }
   function normalize(cfg={}){
     const merged = {...DEFAULT, ...cfg};
     merged.shareUrl = (merged.shareUrl||'').trim();
     merged.accessToken = (merged.accessToken||'').trim();
     merged.refreshMinutes = sanitizeMinutes(merged.refreshMinutes);
-    if(!merged.fileName){ merged.fileName = 'pedidos.json'; }
+    merged.fileName = sanitizeFileName(merged.fileName) || 'pedidos.json';
     return merged;
   }
   function getConfig(){
@@ -659,14 +665,26 @@ const OneDriveStore = (()=>{
   function sharingToken(url){
     const trimmed = (url||'').trim();
     if(!trimmed) throw new Error('Informe o link de compartilhamento do OneDrive.');
+    if(/^s!|^u!/i.test(trimmed)) return trimmed; // já é um shareId
+    if(/^https?:/i.test(trimmed)){
+      const noParams = trimmed.split('?')[0];
+      return btoa(noParams).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+    }
     return btoa(trimmed).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
   }
-  function contentUrl(cfg){
-    return `https://graph.microsoft.com/v1.0/shares/${sharingToken(cfg.shareUrl)}/driveItem/content`;
+  function buildContentUrl(cfg){
+    const token = sharingToken(cfg.shareUrl);
+    const base = `https://graph.microsoft.com/v1.0/shares/${token}`;
+    const filePath = sanitizeFileName(cfg.fileName);
+    if(filePath){
+      const encoded = filePath.split('/').map(encodeURIComponent).join('/');
+      return `${base}/driveItem:/${encoded}:/content`;
+    }
+    return `${base}/driveItem/content`;
   }
   async function loadWith(cfg){
     if(!cfg.shareUrl || !cfg.accessToken) throw new Error('Configuração do OneDrive incompleta.');
-    const res = await fetch(contentUrl(cfg), {
+    const res = await fetch(buildContentUrl(cfg), {
       headers:{
         'Authorization':`Bearer ${cfg.accessToken}`,
         'Accept':'application/json'
@@ -707,7 +725,7 @@ const OneDriveStore = (()=>{
       'If-Match': etag || '*'
     };
     const body = JSON.stringify(orders, null, 2);
-    const res = await fetch(contentUrl(cfg), { method:'PUT', headers, body });
+    const res = await fetch(buildContentUrl(cfg), { method:'PUT', headers, body });
     if(res.status===401) throw new Error('Token inválido ou expirado.');
     if(res.status===412) throw new Error('Arquivo alterado por outra pessoa. Atualize e tente novamente.');
     if(!res.ok){
