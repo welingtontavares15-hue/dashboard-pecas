@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>🧰 Solicitação de Peças — Local/Global (Power Automate)</title>
+<title>🧰 Solicitação de Peças — Local/Global (OneDrive)</title>
 
 <!-- PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -68,6 +68,13 @@ kbd{background:#0003;border:1px solid var(--border);border-bottom-width:2px;bord
 .modal .issue:last-child{border-bottom:none}
 .modal .muted{color:var(--muted);font-size:12px}
 .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal .config-grid{display:grid;gap:10px;margin:14px 0}
+.modal .config-grid label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.modal .config-grid input,.modal .config-grid textarea,.modal .config-grid select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text)}
+.modal .config-grid textarea{min-height:110px;resize:vertical}
+.modal .config-info{font-size:13px;color:var(--muted);line-height:1.5}
+.modal .config-grid .inline{display:flex;gap:10px;flex-wrap:wrap}
+.modal .config-grid .inline > div{flex:1 1 180px}
 /* === FLUXO (cores no SELECT) === */
 select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
 select.status.flow-sup{background:var(--warn)}
@@ -142,11 +149,13 @@ select.status.flow-ent{background:var(--ok)}
   <div class="toolbar">
     <button id="btn-modo-local">💾 Local</button>
     <button id="btn-modo-global">☁️ Global</button>
+    <button id="btn-onedrive-config" class="btn-ghost">⚙️ OneDrive</button>
+    <button id="btn-global-sync" class="btn-ghost">🔄 Atualizar nuvem</button>
     <button id="btn-theme">🌗 Tema</button>
     <button id="btn-auditar">🩺 Checar Consistência</button>
     <button id="btn-xlsx">📊 Excel</button>
     <button id="btn-pdf">📄 PDF</button>
-    <button id="btn-enviar" class="btn-ok">🚀 Enviar (Flow)</button>
+    <button id="btn-enviar" class="btn-ok">🚀 Enviar</button>
   </div>
 </header>
 
@@ -329,6 +338,45 @@ select.status.flow-ent{background:var(--ok)}
       <button id="audit-close">Fechar</button>
       <button id="audit-fix">Corrigir e Fechar</button>
       <button id="audit-ignore" class="btn-ok">Ignorar e Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Configuração OneDrive -->
+<div id="modal-onedrive" class="modal-backdrop">
+  <div class="modal">
+    <h3>☁️ Configurar OneDrive compartilhado</h3>
+    <p class="config-info">
+      Utilize um arquivo <code>pedidos.json</code> em uma pasta compartilhada do OneDrive com permissão de edição para a equipe.
+      Gere um token de acesso (Microsoft Graph) com permissão para ler e gravar arquivos nessa pasta e cole abaixo. O token pode ser obtido pelo Graph Explorer ou por um aplicativo Azure AD.
+    </p>
+    <div class="config-grid">
+      <div>
+        <label for="onedrive-share">Link de compartilhamento do arquivo JSON</label>
+        <input id="onedrive-share" type="url" placeholder="https://.../pedidos.json" autocomplete="off">
+      </div>
+      <div>
+        <label for="onedrive-token">Token de acesso (Bearer)</label>
+        <textarea id="onedrive-token" placeholder="Cole aqui o token gerado para o Microsoft Graph"></textarea>
+      </div>
+      <div class="inline">
+        <div>
+          <label for="onedrive-refresh-min">Atualização automática (minutos)</label>
+          <input id="onedrive-refresh-min" type="number" min="1" step="1" value="10">
+        </div>
+        <div>
+          <label for="onedrive-arquivo">Nome sugerido do arquivo</label>
+          <input id="onedrive-arquivo" type="text" placeholder="pedidos.json">
+        </div>
+      </div>
+    </div>
+    <div class="config-info">
+      <strong>Dica:</strong> após salvar, utilize “Atualizar nuvem” para sincronizar o histórico mais recente para toda a equipe.
+    </div>
+    <div class="actions">
+      <button id="onedrive-cancelar">Cancelar</button>
+      <button id="onedrive-testar" class="btn-ghost">Testar conexão</button>
+      <button id="onedrive-salvar" class="btn-ok">Salvar configuração</button>
     </div>
   </div>
 </div>
@@ -546,12 +594,280 @@ const byRecentFirst = (a,b) =>
   (b.numero || '').localeCompare(a.numero || '');
 
 /* ========= Config ========= */
-const LS = { PARTS:'sp_parts_v3', TECHS:'sp_techs_v3', ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', THEME:'sp_theme', MODO:'sp_modo_integracao', AGENDA:'sp_agenda_v1' };
-const API_SAVE = 'COLE_AQUI_URL_DO_FLOW_SALVAR';
-const API_LIST = 'COLE_AQUI_URL_DO_FLOW_LISTAR';
-const API_UPDATE_STATUS = 'COLE_AQUI_URL_DO_FLOW_STATUS';
+const LS = {
+  PARTS:'sp_parts_v3',
+  TECHS:'sp_techs_v3',
+  ORD:'sp_orders_v3',
+  CUR:'sp_current_v3',
+  SEQ:'sp_seq_v1',
+  THEME:'sp_theme',
+  MODO:'sp_modo_integracao',
+  AGENDA:'sp_agenda_v1',
+  ONEDRIVE:'sp_onedrive_cfg_v1'
+};
+const GLOBAL_REFRESH_MIN_DEFAULT = 10;
 const getModo = () => localStorage.getItem(LS.MODO) || 'local';
-const setModo = m => { localStorage.setItem(LS.MODO,m); $('#badge-modo').textContent='Modo: '+m.toUpperCase(); toast(m==='global'?'Modo GLOBAL (Excel) ativo':'Modo LOCAL ativo'); };
+const setModo = m => {
+  localStorage.setItem(LS.MODO,m);
+  $('#badge-modo').textContent='Modo: '+m.toUpperCase();
+  toast(m==='global'?'Modo GLOBAL (OneDrive) ativo':'Modo LOCAL ativo');
+  if(m==='global'){
+    ensureGlobalCache(true).catch(err=>{
+      console.error('OneDrive sync', err);
+      toast('Falha ao conectar ao OneDrive — verifique a configuração.');
+    });
+  }
+  gerarNumero();
+};
+
+/* ========= OneDrive Sync ========= */
+const OneDriveStore = (()=>{
+  const DEFAULT = {
+    shareUrl:'',
+    accessToken:'',
+    refreshMinutes:GLOBAL_REFRESH_MIN_DEFAULT,
+    fileName:'pedidos.json'
+  };
+  function parseStored(){
+    try{
+      const raw = JSON.parse(localStorage.getItem(LS.ONEDRIVE)||'{}');
+      return {...DEFAULT, ...raw};
+    }catch(e){
+      return {...DEFAULT};
+    }
+  }
+  function sanitizeMinutes(v){
+    const n = parseInt(v,10);
+    return Number.isFinite(n) && n>0 ? n : GLOBAL_REFRESH_MIN_DEFAULT;
+  }
+  function normalize(cfg={}){
+    const merged = {...DEFAULT, ...cfg};
+    merged.shareUrl = (merged.shareUrl||'').trim();
+    merged.accessToken = (merged.accessToken||'').trim();
+    merged.refreshMinutes = sanitizeMinutes(merged.refreshMinutes);
+    if(!merged.fileName){ merged.fileName = 'pedidos.json'; }
+    return merged;
+  }
+  function getConfig(){
+    return normalize(parseStored());
+  }
+  function setConfig(newCfg={}){
+    const normalized = normalize({...parseStored(), ...newCfg});
+    localStorage.setItem(LS.ONEDRIVE, JSON.stringify(normalized));
+    return normalized;
+  }
+  function sharingToken(url){
+    const trimmed = (url||'').trim();
+    if(!trimmed) throw new Error('Informe o link de compartilhamento do OneDrive.');
+    return btoa(trimmed).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_');
+  }
+  function contentUrl(cfg){
+    return `https://graph.microsoft.com/v1.0/shares/${sharingToken(cfg.shareUrl)}/driveItem/content`;
+  }
+  async function loadWith(cfg){
+    if(!cfg.shareUrl || !cfg.accessToken) throw new Error('Configuração do OneDrive incompleta.');
+    const res = await fetch(contentUrl(cfg), {
+      headers:{
+        'Authorization':`Bearer ${cfg.accessToken}`,
+        'Accept':'application/json'
+      }
+    });
+    if(res.status===401) throw new Error('Token inválido ou expirado.');
+    if(res.status===404){
+      return { orders:[], etag:res.headers.get('ETag')||res.headers.get('etag')||null };
+    }
+    if(!res.ok){
+      const msg = await res.text();
+      throw new Error(`Erro ao ler arquivo (${res.status}): ${msg.slice(0,140)}`);
+    }
+    const etag = res.headers.get('ETag') || res.headers.get('etag') || null;
+    const text = await res.text();
+    const trimmed = text.trim();
+    let lista = [];
+    if(trimmed){
+      try{
+        const parsed = JSON.parse(trimmed);
+        if(Array.isArray(parsed)) lista = parsed;
+        else if(Array.isArray(parsed.orders)) lista = parsed.orders;
+        else throw new Error('Formato JSON inválido');
+      }catch(e){
+        throw new Error('Conteúdo JSON inválido no arquivo do OneDrive.');
+      }
+    }
+    return { orders:lista, etag };
+  }
+  async function load(){
+    return loadWith(getConfig());
+  }
+  async function saveWith(cfg, orders, etag){
+    if(!cfg.shareUrl || !cfg.accessToken) throw new Error('Configuração do OneDrive incompleta.');
+    const headers = {
+      'Authorization':`Bearer ${cfg.accessToken}`,
+      'Content-Type':'application/json',
+      'If-Match': etag || '*'
+    };
+    const body = JSON.stringify(orders, null, 2);
+    const res = await fetch(contentUrl(cfg), { method:'PUT', headers, body });
+    if(res.status===401) throw new Error('Token inválido ou expirado.');
+    if(res.status===412) throw new Error('Arquivo alterado por outra pessoa. Atualize e tente novamente.');
+    if(!res.ok){
+      const msg = await res.text();
+      throw new Error(`Erro ao salvar (${res.status}): ${msg.slice(0,140)}`);
+    }
+    let newEtag = res.headers.get('ETag') || res.headers.get('etag') || null;
+    try{
+      const meta = await res.json();
+      if(meta?.eTag) newEtag = meta.eTag;
+    }catch(_){/* ignore */}
+    return { etag:newEtag };
+  }
+  async function save(orders, etag){
+    return saveWith(getConfig(), orders, etag);
+  }
+  async function testConfig(cfg){
+    const merged = normalize({...parseStored(), ...cfg});
+    return loadWith(merged);
+  }
+  return { getConfig, setConfig, load, save, testConfig };
+})();
+
+const GLOBAL_CACHE = { orders:[], etag:null, loaded:false, loading:null, lastSync:0 };
+
+function normalizePedido(raw={}){
+  const itens = Array.isArray(raw.itens) ? raw.itens.map(it=>({
+    codigo:(it.codigo||'').toString().trim().toUpperCase(),
+    descricao:it.descricao||'',
+    idMaquina:(it.idMaquina||it.idmaq||it.id||'').toString(),
+    qtd:Number(it.qtd ?? it.quantidade ?? 0) || 0,
+    valor:Number(it.valor ?? it.valorUnitario ?? 0) || 0,
+    subtotal:Number(it.subtotal ?? ((Number(it.valor ?? it.valorUnitario ?? 0)||0) * (Number(it.qtd ?? it.quantidade ?? 0)||0))) || 0
+  })) : [];
+  return {
+    numero:(raw.numero||'').toString(),
+    data:raw.data || new Date().toISOString().slice(0,10),
+    tecnico:raw.tecnico || '',
+    endereco:raw.endereco || '',
+    bairro:raw.bairro || '',
+    municipio:raw.municipio || '',
+    uf:raw.uf || '',
+    cep:raw.cep || '',
+    envio:raw.envio || 'Normal',
+    obs:raw.obs || '',
+    subtotal:Number(raw.subtotal ?? 0) || 0,
+    total:Number(raw.total ?? 0) || 0,
+    descValor:Number(raw.descValor ?? raw.descontoValor ?? 0) || 0,
+    frete:Number(raw.frete ?? 0) || 0,
+    status:raw.status || 'Supervisor Diversey',
+    itens
+  };
+}
+
+function clonePedido(p){
+  return JSON.parse(JSON.stringify(normalizePedido(p)));
+}
+
+function setGlobalState(lista, etag){
+  GLOBAL_CACHE.orders = (lista||[]).map(normalizePedido);
+  GLOBAL_CACHE.etag = etag || null;
+  GLOBAL_CACHE.loaded = true;
+  GLOBAL_CACHE.lastSync = Date.now();
+}
+
+async function ensureGlobalCache(force=false){
+  if(GLOBAL_CACHE.loading){
+    try{ await GLOBAL_CACHE.loading; }catch(_){/* ignore */}
+    if(!force) return GLOBAL_CACHE;
+  }
+  const cfg = OneDriveStore.getConfig();
+  const refreshMs = Math.max(1, Number(cfg.refreshMinutes||GLOBAL_REFRESH_MIN_DEFAULT)) * 60_000;
+  if(!force && GLOBAL_CACHE.loaded && (Date.now()-GLOBAL_CACHE.lastSync) < refreshMs){
+    return GLOBAL_CACHE;
+  }
+  const promise = OneDriveStore.load().then(({orders, etag})=>{
+    setGlobalState(orders, etag);
+    return GLOBAL_CACHE;
+  });
+  GLOBAL_CACHE.loading = promise;
+  try{
+    await promise;
+  }finally{
+    GLOBAL_CACHE.loading = null;
+  }
+  return GLOBAL_CACHE;
+}
+
+async function salvarListaGlobal(lista){
+  const atual = lista.map(normalizePedido);
+  const { etag } = await OneDriveStore.save(atual, GLOBAL_CACHE.etag);
+  setGlobalState(atual, etag);
+  return atual;
+}
+
+function proximoNumeroGlobal(){
+  const d=new Date();
+  const key=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const prefix=`REQ-${key}-`;
+  const existentes = GLOBAL_CACHE.orders.filter(o => (o.numero||'').startsWith(prefix));
+  let maior = 0;
+  existentes.forEach(o=>{
+    const seq = Number((o.numero||'').slice(prefix.length));
+    if(Number.isFinite(seq) && seq>maior) maior=seq;
+  });
+  return `${prefix}${String(maior+1).padStart(4,'0')}`;
+}
+
+const getOneDriveConfig = ()=>OneDriveStore.getConfig();
+
+function obterConfigFormulario(){
+  return {
+    shareUrl:$('#onedrive-share')?.value?.trim()||'',
+    accessToken:$('#onedrive-token')?.value?.trim()||'',
+    refreshMinutes:Number($('#onedrive-refresh-min')?.value||GLOBAL_REFRESH_MIN_DEFAULT),
+    fileName:$('#onedrive-arquivo')?.value?.trim()||'pedidos.json'
+  };
+}
+function preencherFormularioOneDrive(){
+  const cfg = getOneDriveConfig();
+  if($('#onedrive-share')) $('#onedrive-share').value = cfg.shareUrl||'';
+  if($('#onedrive-token')) $('#onedrive-token').value = cfg.accessToken||'';
+  if($('#onedrive-refresh-min')) $('#onedrive-refresh-min').value = cfg.refreshMinutes||GLOBAL_REFRESH_MIN_DEFAULT;
+  if($('#onedrive-arquivo')) $('#onedrive-arquivo').value = cfg.fileName||'pedidos.json';
+}
+function abrirModalOneDrive(){
+  preencherFormularioOneDrive();
+  $('#modal-onedrive').style.display='flex';
+}
+function fecharModalOneDrive(){
+  $('#modal-onedrive').style.display='none';
+}
+async function salvarConfiguracaoOneDrive(){
+  try{
+    const valores = obterConfigFormulario();
+    const cfg = OneDriveStore.setConfig(valores);
+    toast('Configuração do OneDrive salva ✅');
+    fecharModalOneDrive();
+    if(getModo()==='global' && cfg.shareUrl && cfg.accessToken){
+      await ensureGlobalCache(true);
+      await montarHistoricoGlobal({refresh:false});
+      gerarNumero();
+    }else if(getModo()==='global'){
+      toast('Informe link e token válidos para sincronizar com o OneDrive.');
+    }
+  }catch(e){
+    console.error('Salvar config OneDrive', e);
+    toast(e.message||'Não foi possível salvar a configuração do OneDrive');
+  }
+}
+async function testarConfiguracaoOneDrive(){
+  try{
+    const valores = obterConfigFormulario();
+    await OneDriveStore.testConfig(valores);
+    toast('Conexão com OneDrive validada ✅');
+  }catch(e){
+    console.error('Teste config OneDrive', e);
+    toast(e.message||'Falha ao testar conexão com OneDrive');
+  }
+}
 
 /* ========= Peças (base) — 120 itens ========= */
 const itensBase = [
@@ -905,7 +1221,7 @@ function makeFlowSelect(value, disabled=false){
 }
 
 /* ========= Sequência ========= */
-function gerarNumero(){
+function gerarNumeroLocal(){
   const d=new Date();
   const key = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
   let seq=JSON.parse(localStorage.getItem(LS.SEQ)||'{}');
@@ -913,6 +1229,26 @@ function gerarNumero(){
   const numero=`REQ-${key}-${String(seq.counter).padStart(4,'0')}`;
   $('#req-num').value=numero;
   seq.counter++; localStorage.setItem(LS.SEQ, JSON.stringify(seq));
+}
+function gerarNumeroGlobal(){
+  const field = $('#req-num');
+  if(!field) return;
+  if(!GLOBAL_CACHE.loaded){
+    field.value = 'Sincronizando OneDrive...';
+    ensureGlobalCache().then(()=>{
+      if(getModo()==='global') gerarNumeroGlobal();
+    }).catch(err=>{
+      console.error('Numero global', err);
+      toast('Não foi possível ler os pedidos do OneDrive.');
+      field.value='';
+    });
+    return;
+  }
+  field.value = proximoNumeroGlobal();
+}
+function gerarNumero(){
+  if(getModo()==='global') gerarNumeroGlobal();
+  else gerarNumeroLocal();
 }
 
 /* ========= Seleção & Exclusão (Histórico) ========= */
@@ -933,6 +1269,24 @@ function excluirSelecionadosLocal(){
   if(cur && numeros.includes(cur.numero)){ localStorage.removeItem(LS.CUR); }
   toast(`Removido(s): ${antes - lista.length}`);
   montarHistoricoLocal();
+}
+async function excluirSelecionadosGlobal(){
+  const numeros = getHistoricoSelecionados();
+  if(!numeros.length){ toast('Nenhum pedido selecionado'); return; }
+  const ok = confirm(`Excluir ${numeros.length} pedido(s) compartilhado(s) no OneDrive? Esta ação não pode ser desfeita.`);
+  if(!ok) return;
+  try{
+    await ensureGlobalCache();
+    const antes = GLOBAL_CACHE.orders.length;
+    const lista = GLOBAL_CACHE.orders.filter(o=>!numeros.includes(o.numero));
+    if(lista.length===antes){ toast('Nenhum pedido removido.'); return; }
+    await salvarListaGlobal(lista);
+    toast(`Removido(s) do OneDrive: ${antes - lista.length}`);
+    await montarHistoricoGlobal({refresh:true});
+  }catch(e){
+    console.error('Excluir OneDrive', e);
+    toast(e.message||'Falha ao excluir no OneDrive');
+  }
 }
 function bindSelectAll(){
   const master = document.getElementById('hist-select-all');
@@ -1126,26 +1480,79 @@ async function baixarPDFFrom(o){
   toast('PDF gerado ✅');
 }
 
-/* ========= Local ========= */
-function salvarLocal(){
-  const tecnico=$('#tecnico').value; if(!tecnico){ toast('Selecione o técnico'); return false; }
-  const itens=collectItems(); if(!itens.length){ toast('Inclua ao menos 1 item'); return false; }
-
+/* ========= Local / Global ========= */
+function coletarPedidoDados(){
+  const tecnico=$('#tecnico').value;
+  if(!tecnico){ toast('Selecione o técnico'); return null; }
+  const itens=collectItems();
+  if(!itens.length){ toast('Inclua ao menos 1 item'); return null; }
   const tot=calcTotal();
-  const dados={
-    numero:$('#req-num').value, data:new Date().toISOString().slice(0,10),
-    tecnico, endereco:$('#endereco').value, bairro:$('#bairro').value, municipio:$('#municipio').value, uf:$('#uf').value, cep:$('#cep').value,
+  return normalizePedido({
+    numero:$('#req-num').value || (getModo()==='global'?proximoNumeroGlobal():''),
+    data:new Date().toISOString().slice(0,10),
+    tecnico,
+    endereco:$('#endereco').value,
+    bairro:$('#bairro').value,
+    municipio:$('#municipio').value,
+    uf:$('#uf').value,
+    cep:$('#cep').value,
     envio:$('#envio').value || 'Normal',
-    obs:$('#obs').value, ...tot, itens,
-    status:'Supervisor Diversey'
-  };
+    obs:$('#obs').value,
+    ...tot,
+    itens
+  });
+}
+function salvarLocal(){
+  const dados=coletarPedidoDados();
+  if(!dados) return false;
   const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   const i=lista.findIndex(o=>o.numero===dados.numero);
   if(i>=0){ dados.status = lista[i].status || dados.status; lista[i]=dados; } else { lista.push(dados); }
   localStorage.setItem(LS.ORD, JSON.stringify(lista));
   localStorage.setItem(LS.CUR, JSON.stringify(dados));
   montarHistoricoLocal();
+  toast('Pedido salvo localmente.');
   return true;
+}
+async function salvarGlobal(){
+  const dados=coletarPedidoDados();
+  if(!dados) return false;
+  try{
+    await ensureGlobalCache();
+    const lista = GLOBAL_CACHE.orders.map(clonePedido);
+    const idx = lista.findIndex(o=>o.numero===dados.numero);
+    if(idx>=0){ dados.status = lista[idx].status || dados.status; lista[idx]=dados; }
+    else { lista.push(dados); }
+    await salvarListaGlobal(lista);
+    await montarHistoricoGlobal({refresh:false});
+    localStorage.setItem(LS.CUR, JSON.stringify(dados));
+    toast('Pedido salvo no OneDrive ☁️');
+    return true;
+  }catch(e){
+    console.error('Salvar OneDrive', e);
+    toast(e.message||'Falha ao salvar no OneDrive');
+    return false;
+  }
+}
+async function salvarAtual(){
+  if(getModo()==='global') return await salvarGlobal();
+  return salvarLocal();
+}
+async function atualizarStatusGlobal(numero, novoStatus){
+  try{
+    await ensureGlobalCache();
+    const lista = GLOBAL_CACHE.orders.map(clonePedido);
+    const idx = lista.findIndex(o=>o.numero===numero);
+    if(idx<0) throw new Error('Pedido não encontrado no OneDrive.');
+    lista[idx].status = novoStatus;
+    await salvarListaGlobal(lista);
+    toast('Fluxo atualizado no OneDrive: '+novoStatus);
+    return true;
+  }catch(e){
+    console.error('Status OneDrive', e);
+    toast(e.message||'Falha ao atualizar no OneDrive');
+    return false;
+  }
 }
 function updateStatusLocal(numero, novo){
   let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
@@ -1157,9 +1564,34 @@ function updateStatusLocal(numero, novo){
 }
 
 /* ========= Histórico (LOCAL) ========= */
+function preencherFormularioPedido(o){
+  if(!o) return;
+  $('#req-num').value=o.numero||'';
+  $('#tecnico').value=o.tecnico||'';
+  preencherEndereco(o.tecnico||'');
+  $('#envio').value=o.envio||'Normal';
+  $('#obs').value=o.obs||'';
+  $('#desc-valor').value=o.descValor||0;
+  $('#frete').value=o.frete||0;
+  const tbody=$('#tabela-itens tbody');
+  tbody.innerHTML='';
+  const itens = Array.isArray(o.itens) ? o.itens : [];
+  if(itens.length){
+    itens.forEach(it=>addRow({
+      codigo:it.codigo,
+      descricao:it.descricao,
+      valor:it.valor,
+      qtd:it.qtd,
+      idMaquina:it.idMaquina||it.idmaq
+    }));
+  }else{
+    addRow();
+  }
+  calcTotal();
+}
 function montarHistoricoLocal(){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
-  let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+  let lista=(JSON.parse(localStorage.getItem(LS.ORD)||'[]')||[]).map(normalizePedido);
 
   lista.sort(byRecentFirst);
   $('#hist').style.display=lista.length?'block':'none';
@@ -1202,7 +1634,9 @@ function montarHistoricoLocal(){
 
     const tdAcoes=document.createElement('td');
     const bAbrir=document.createElement('button'); bAbrir.textContent='Abrir';
-    bAbrir.addEventListener('click',()=>abrirLocal(o.numero));
+    bAbrir.addEventListener('click',()=>{
+      abrirLocal(o.numero);
+    });
     const bExcel=document.createElement('button'); bExcel.textContent='📊 Excel';
     bExcel.addEventListener('click',()=>exportXLSXFrom(o));
     const bPdf=document.createElement('button'); bPdf.textContent='📄 PDF';
@@ -1219,18 +1653,83 @@ function montarHistoricoLocal(){
   bindFiltros();
   aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
 }
+async function montarHistoricoGlobal({refresh=false}={}){
+  const tb=$('#tabela-hist tbody'); if(!tb) return; tb.innerHTML='';
+  const hist=$('#hist');
+  try{
+    await ensureGlobalCache(refresh);
+    const lista = GLOBAL_CACHE.orders.map(clonePedido);
+    lista.sort(byRecentFirst);
+    if(!lista.length){
+      hist.style.display='none';
+      $('#hist-empty').style.display='block';
+      popularFiltroMesAno([]);
+      return;
+    }
+    hist.style.display='block';
+    $('#hist-empty').style.display='none';
+    popularFiltroMesAno(lista);
+    for(const o of lista){
+      const tr=document.createElement('tr');
+
+      const tdSel=document.createElement('td');
+      tdSel.style.textAlign='center';
+      tdSel.innerHTML=`<input type="checkbox" class="hist-select" value="${o.numero}" title="Selecionar ${o.numero}">`;
+      tr.appendChild(tdSel);
+
+      const tdNum=document.createElement('td'); tdNum.className='td-num'; tdNum.textContent=o.numero;
+      const tdData=document.createElement('td'); tdData.className='td-data'; tdData.textContent=o.data;
+      const tdTec=document.createElement('td'); tdTec.className='td-tec'; tdTec.textContent=o.tecnico||'-';
+      const tdItens=document.createElement('td'); tdItens.textContent=o.itens?.length || 0;
+      const tdTot=document.createElement('td'); tdTot.textContent=BRL(o.total||0);
+      tr.appendChild(tdNum); tr.appendChild(tdData); tr.appendChild(tdTec); tr.appendChild(tdItens); tr.appendChild(tdTot);
+
+      const sel=makeFlowSelect(o.status||'Supervisor Diversey', false);
+      sel.addEventListener('change',async()=>{
+        const novo=sel.value;
+        if(novo==='Entregue'){
+          const ok=confirm('Confirmar entrega do material para marcar como "Entregue"?');
+          if(!ok){ sel.value=o.status||'Supervisor Diversey'; applyFlowStyle(sel, sel.value); return; }
+        }
+        const ok = await atualizarStatusGlobal(o.numero, novo);
+        if(!ok){
+          sel.value=o.status||'Supervisor Diversey';
+          applyFlowStyle(sel, sel.value);
+        }else{
+          o.status=novo;
+        }
+      });
+      const tdStatus=document.createElement('td'); tdStatus.appendChild(sel); tr.appendChild(tdStatus);
+
+      const tdA=document.createElement('td');
+      const bAbrir=document.createElement('button'); bAbrir.textContent='Abrir';
+      bAbrir.addEventListener('click',()=>abrirGlobal(o.numero));
+      const bExcel=document.createElement('button'); bExcel.textContent='📊 Excel'; bExcel.addEventListener('click',()=>exportXLSXFrom(o));
+      const bPdf=document.createElement('button'); bPdf.textContent='📄 PDF'; bPdf.addEventListener('click',()=>baixarPDFFrom(o));
+      tdA.appendChild(bAbrir); tdA.appendChild(bExcel); tdA.appendChild(bPdf);
+      tr.appendChild(tdA);
+
+      tb.appendChild(tr);
+    }
+    bindSelectAll();
+    bindFiltros();
+    aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
+  }catch(e){
+    console.error('Histórico OneDrive', e);
+    toast(e.message||'Falha ao carregar histórico do OneDrive');
+  }
+}
 function abrirLocal(num){
   const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   const o=lista.find(x=>x.numero===num); if(!o) return;
-  $('#req-num').value=o.numero;
-  $('#tecnico').value=o.tecnico; preencherEndereco(o.tecnico);
-  $('#envio').value=o.envio||'Normal';
-  $('#obs').value=o.obs||'';
-  $('#desc-valor').value=o.descValor||0;
-  $('#frete').value=o.frete||0;
-  const tbody=$('#tabela-itens tbody'); tbody.innerHTML='';
-  (o.itens||[]).forEach(it=>addRow(it));
-  calcTotal(); toast('Solicitação carregada');
+  preencherFormularioPedido(normalizePedido(o));
+  toast('Solicitação carregada');
+}
+function abrirGlobal(num){
+  const o = GLOBAL_CACHE.orders.find(x=>x.numero===num);
+  if(!o){ toast('Pedido não encontrado no OneDrive.'); return; }
+  preencherFormularioPedido(o);
+  toast('Solicitação carregada do OneDrive');
 }
 
 /* ========= Excel/PDF do formulário atual ========= */
@@ -1248,31 +1747,6 @@ function getOrder(){
 function exportXLSX(){ exportXLSXFrom(getOrder()); }
 async function baixarPDF(){ await baixarPDFFrom(getOrder()); }
 
-/* ========= GLOBAL (Flow) ========= */
-async function listarGlobalExcel(){
-  if(!API_LIST || API_LIST.startsWith('COLE_AQUI')) throw new Error('API_LIST não configurada');
-  const r=await fetch(API_LIST); if(!r.ok) throw new Error('Falha ao listar no Flow');
-  const j=await r.json(); if(!j.success) throw new Error('Resposta inválida do Flow');
-  const rows=j.rows||[];
-  return rows.map(r=>({
-    numero:r.Numero, data:r.Data, tecnico:r.Tecnico, endereco:r.Endereco, bairro:r.Bairro,
-    municipio:r.Municipio, uf:r.UF, cep:r.CEP,
-    envio:r.Envio||'Normal',
-    subtotal:Number(r.Subtotal||0), descValor:Number(r.DescontoValor||0),
-    frete:Number(r.Frete||0), total:Number(r.Total||0),
-    status:r.Status||'Supervisor Diversey',
-    itens:(()=>{ try{return JSON.parse(r.ItensJson||'[]')}catch{return[]} })()
-  }));
-}
-async function atualizarStatusGlobal(numero, novoStatus){
-  if(!API_UPDATE_STATUS || API_UPDATE_STATUS.startsWith('COLE_AQUI')) throw new Error('API_UPDATE_STATUS não configurada');
-  const payload = { numero, status: novoStatus };
-  const r = await fetch(API_UPDATE_STATUS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-  if(!r.ok) throw new Error('Falha ao atualizar status no Flow');
-  const j = await r.json(); if(!j.success) throw new Error('Resposta inválida do Flow');
-  return true;
-}
-
 /* ========= Boot ========= */
 function novaSolicitacao(){
   $('#tecnico').value=''; $('#endereco').value=''; $('#bairro').value='';
@@ -1287,6 +1761,22 @@ function boot(){
   $('#btn-theme').addEventListener('click',()=>{document.documentElement.classList.toggle('light');localStorage.setItem(LS.THEME,document.documentElement.classList.contains('light')?'light':'dark');});
   $('#btn-modo-local').addEventListener('click',()=>setModo('local'));
   $('#btn-modo-global').addEventListener('click',()=>setModo('global'));
+  $('#btn-onedrive-config').addEventListener('click',abrirModalOneDrive);
+  $('#btn-global-sync').addEventListener('click',async()=>{
+    if(getModo()!=='global'){
+      toast('Ative o modo GLOBAL para sincronizar com o OneDrive.');
+      return;
+    }
+    try{
+      await ensureGlobalCache(true);
+      await montarHistoricoGlobal({refresh:false});
+      gerarNumero();
+      toast('OneDrive sincronizado com sucesso ☁️');
+    }catch(e){
+      console.error('Sync OneDrive', e);
+      toast(e.message||'Falha ao sincronizar com OneDrive');
+    }
+  });
 
   $('#btn-pdf').addEventListener('click',baixarPDF);
   $('#btn-xlsx').addEventListener('click',exportXLSX);
@@ -1295,96 +1785,30 @@ function boot(){
     const rep = auditarPedido(); showAuditModal(rep);
   });
 
-  $('#btn-enviar').addEventListener('click',()=>{
+  $('#btn-enviar').addEventListener('click',async()=>{
     const rep = auditarPedido();
+    const tentarSalvar = async ()=>{
+      const ok = await salvarAtual();
+      if(ok){ novaSolicitacao(); }
+    };
     if(!rep.ok){
-      showAuditModal(rep,{ onIgnoreSend: ()=>{
-        const ok = salvarLocal();
-        if(ok){ novaSolicitacao(); }
-      }});
+      showAuditModal(rep,{ onIgnoreSend: ()=>{ tentarSalvar(); }});
       return;
     }
-    const ok = salvarLocal();
-    if(ok){ novaSolicitacao(); }
+    await tentarSalvar();
   });
 
-  document.getElementById('hist-del').addEventListener('click', ()=>{
+  document.getElementById('hist-del').addEventListener('click', async ()=>{
     if(getModo()==='global'){
-      toast('Exclusão no modo GLOBAL não está implementada.');
-      return;
+      await excluirSelecionadosGlobal();
+    } else {
+      excluirSelecionadosLocal();
     }
-    excluirSelecionadosLocal();
   });
 
   $('#btn-hist').addEventListener('click',async()=>{
-    const hist=$('#hist'); const tbody=$('#tabela-hist tbody'); tbody.innerHTML='';
     if(getModo()==='global'){
-      try{
-        let lista=await listarGlobalExcel();
-        lista.sort(byRecentFirst);
-        if(!lista.length){ hist.style.display='none'; return; }
-        hist.style.display='block';
-
-        // Popular Mês/Ano com base na lista GLOBAL
-        popularFiltroMesAno(lista);
-
-        for(const o of lista){
-          const tr=document.createElement('tr');
-
-          const tdSel = document.createElement('td');
-          tdSel.style.textAlign='center';
-          tdSel.innerHTML = `<input type="checkbox" class="hist-select" value="${o.numero}" title="Selecionar ${o.numero}">`;
-          tr.appendChild(tdSel);
-
-          const tdNum  = document.createElement('td'); tdNum.className='td-num'; tdNum.textContent = o.numero;
-          const tdData = document.createElement('td'); tdData.className='td-data'; tdData.textContent = o.data;
-          const tdTec  = document.createElement('td'); tdTec.className='td-tec'; tdTec.textContent  = o.tecnico || '-';
-          const tdItens= document.createElement('td'); tdItens.textContent = o.itens?.length || 0;
-          const tdTot  = document.createElement('td'); tdTot.textContent = BRL(o.total||0);
-
-          tr.appendChild(tdNum);
-          tr.appendChild(tdData);
-          tr.appendChild(tdTec);
-          tr.appendChild(tdItens);
-          tr.appendChild(tdTot);
-
-          const sel=makeFlowSelect(o.status||'Supervisor Diversey', false);
-          sel.addEventListener('change', async ()=>{
-            let newVal = sel.value;
-            if(newVal==='Entregue'){
-              const ok=confirm('Confirmar entrega do material para marcar como "Entregue"?');
-              if(!ok){ sel.value=o.status||'Supervisor Diversey'; applyFlowStyle(sel, sel.value); return; }
-            }
-            try{
-              await atualizarStatusGlobal(o.numero, newVal);
-              toast('Fluxo atualizado no GLOBAL: '+newVal);
-              o.status=newVal;
-            }catch(e){
-              console.error(e);
-              toast('Falha ao atualizar no GLOBAL — fluxo não alterado');
-              sel.value = o.status||'Supervisor Diversey';
-              applyFlowStyle(sel, sel.value);
-            }
-          });
-          const tdStatus=document.createElement('td'); tdStatus.appendChild(sel);
-          tr.appendChild(tdStatus);
-
-          const tdA=document.createElement('td');
-          const bExcel=document.createElement('button'); bExcel.textContent='📊 Excel';
-          bExcel.addEventListener('click',()=>exportXLSXFrom(o));
-          const bPdf=document.createElement('button'); bPdf.textContent='📄 PDF';
-          bPdf.addEventListener('click',()=>baixarPDFFrom(o));
-          tdA.appendChild(bExcel);
-          tdA.appendChild(bPdf);
-          tr.appendChild(tdA);
-
-          tbody.appendChild(tr);
-        }
-        hist.style.display='block';
-        bindSelectAll();
-        bindFiltros();
-        aplicaFiltrosLinhas($$('#tabela-hist tbody tr'));
-      }catch(e){ console.error(e); toast('Erro no Excel — mostrando LOCAL'); montarHistoricoLocal(); }
+      await montarHistoricoGlobal({refresh:true});
     } else {
       montarHistoricoLocal();
     }
@@ -1395,7 +1819,11 @@ function boot(){
     toast('Histórico ocultado');
   });
 
-  $('#btn-nova').addEventListener('click',()=>{ const ok = salvarLocal(); if(ok){ novaSolicitacao(); } });
+  $('#btn-nova').addEventListener('click',async()=>{ const ok = await salvarAtual(); if(ok){ novaSolicitacao(); } });
+
+  $('#onedrive-cancelar').addEventListener('click',fecharModalOneDrive);
+  $('#onedrive-salvar').addEventListener('click',salvarConfiguracaoOneDrive);
+  $('#onedrive-testar').addEventListener('click',testarConfiguracaoOneDrive);
 
   preencherListas();
   $('#tecnico').addEventListener('input',()=>preencherEndereco($('#tecnico').value));
