@@ -53,7 +53,7 @@
     input[readonly]{opacity:.9}
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:middle}
-    th{background:#0f172a;color:var(--accent)}
+    th{background:#0f172a;color:var(--accent);position:sticky;top:72px;z-index:2}
     tr:nth-child(even){background:#1f2e44}
     tr:hover{background:#263956}
     .right{text-align:right}
@@ -71,6 +71,16 @@
     .toast.show{display:block}
     select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
     .flow-sup{background:var(--warn)} .flow-forn{background:var(--info)} .flow-rota{background:var(--step)} .flow-ent{background:var(--ok)}
+
+    /* ======= HISTÓRICO — filtros e layout ======= */
+    .hist-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .hist-filtros input,.hist-filtros select{max-width:220px}
+    #tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end}
+    #tabela-hist th:first-child, #tabela-hist td:first-child{position:sticky;left:0;background:#0f172a;z-index:3}
+    .hist-empty{color:var(--muted);padding:8px 0}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
+    .count{color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
@@ -164,8 +174,8 @@
     </section>
 
     <section class="card" id="hist">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h2 style="margin:0">📚 Histórico</h2>
+      <div class="hist-header">
+        <h2 style="margin:0">📚 Histórico <span class="count" id="hist-count"></span></h2>
         <div class="toolbar">
           <button id="btn-hist-mostrar" class="ghost">👁️ Mostrar</button>
           <button id="btn-hist-ocultar" class="ghost">🙈 Ocultar</button>
@@ -173,8 +183,32 @@
           <button id="hist-del" class="btn-danger">🗑️ Excluir selecionados</button>
         </div>
       </div>
+
+      <!-- FILTROS DO HISTÓRICO -->
+      <div class="hist-filtros" id="hist-filtros">
+        <input id="f-num" placeholder="Filtrar por Nº" />
+        <select id="f-mes" title="Mês" style="min-width:120px">
+          <option value="">Mês (todos)</option>
+          <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option><option value="4">Abr</option>
+          <option value="5">Mai</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option>
+          <option value="9">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+        </select>
+        <select id="f-ano" title="Ano" style="min-width:110px">
+          <option value="">Ano (todos)</option>
+        </select>
+        <input id="f-tec" placeholder="Técnico" />
+        <select id="f-status" title="Fluxo">
+          <option value="">Fluxo (todos)</option>
+          <option>Supervisor Diversey</option>
+          <option>Fornecedor</option>
+          <option>Rota de Entrega</option>
+          <option>Entregue</option>
+        </select>
+        <button id="f-limpar" class="ghost">Limpar</button>
+      </div>
+
       <div id="hist-content">
-        <div id="hist-empty" class="small" style="display:none">Sem registros.</div>
+        <div id="hist-empty" class="hist-empty" style="display:none">Sem registros.</div>
         <table id="tabela-hist">
           <thead>
             <tr>
@@ -654,7 +688,7 @@ function makeFlowSelect(value, disabled=false){
 }
 function bindSelectAll(){
   const master=$('#hist-select-all'); if(!master) return;
-  master.addEventListener('change',()=>{ $$('#tabela-hist tbody input.hist-select').forEach(chk=>{ chk.checked=master.checked; }); });
+  master.addEventListener('change',()=>{ $$('#tabela-hist tbody input.hist-select').forEach(chk=>{ if(chk.closest('tr').style.display!=='none') chk.checked=master.checked; }); });
 }
 function btn(t,fn){ const b=document.createElement('button'); b.textContent=t; b.addEventListener('click',fn); return b; }
 
@@ -672,6 +706,54 @@ async function abrirGlobal(numero){
   }catch(e){ console.error(e); toast('Falha ao abrir pedido do OneDrive'); }
 }
 
+// ====== NOVO: filtros do histórico ======
+function parseYYYYMMDD(s){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||''); if(!m) return null; return {year:+m[1], month:+m[2]}; }
+function updateHistCount(){
+  const rows=[...$$('#tabela-hist tbody tr')];
+  const total=rows.length; const vis=rows.filter(r=>r.style.display!=="none").length;
+  $('#hist-count').textContent = total? `• ${vis}/${total} visível(is)` : '';
+}
+function aplicaFiltros(){
+  const fnum=($('#f-num').value||'').trim().toLowerCase();
+  const fmes=($('#f-mes').value||'').trim();
+  const fano=($('#f-ano').value||'').trim();
+  const ftec=($('#f-tec').value||'').trim().toLowerCase();
+  const fstat=($('#f-status').value||'').trim();
+
+  const rows=$$('#tabela-hist tbody tr');
+  rows.forEach(tr=>{
+    const num=(tr.querySelector('.td-num')?.textContent||'').toLowerCase();
+    const dat=(tr.querySelector('.td-data')?.textContent||'').trim();
+    const tec=(tr.querySelector('.td-tec')?.textContent||'').toLowerCase();
+    const st = tr.querySelector('select.status')?.value || '';
+
+    let ok=true;
+    if(fnum) ok = ok && num.includes(fnum);
+    if(ftec) ok = ok && tec.includes(ftec);
+    if(fstat) ok = ok && (st===fstat);
+    if(fmes || fano){ const p=parseYYYYMMDD(dat); ok = ok && !!p; if(p){ if(fmes) ok = ok && String(p.month)===String(fmes); if(fano) ok = ok && String(p.year)===String(fano); } }
+    tr.style.display = ok? '' : 'none';
+  });
+
+  const anyVisible = [...rows].some(tr=>tr.style.display!=="none");
+  $('#hist-empty').style.display = anyVisible ? 'none' : 'block';
+  updateHistCount();
+}
+function popularAnosFromLista(lista){
+  const anos=new Set(); (lista||[]).forEach(o=>{ const p=parseYYYYMMDD(o.data); if(p) anos.add(p.year); });
+  const selAno=$('#f-ano'); const prev = selAno.value; selAno.innerHTML='<option value="">Ano (todos)</option>' + [...anos].sort((a,b)=>b-a).map(y=>`<option>${y}</option>`).join('');
+  if(prev) selAno.value=prev;
+}
+function bindFiltros(){
+  ['#f-num','#f-mes','#f-ano','#f-tec','#f-status'].forEach(id=>{
+    $(id).addEventListener('input',aplicaFiltros);
+    $(id).addEventListener('change',aplicaFiltros);
+  });
+  $('#f-limpar').addEventListener('click',()=>{
+    $('#f-num').value=''; $('#f-mes').value=''; $('#f-ano').value=''; $('#f-tec').value=''; $('#f-status').value=''; aplicaFiltros();
+  });
+}
+
 function montarHistoricoLocal(){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
   let lista=(JSON.parse(localStorage.getItem(LS.ORD)||'[]')||[]).map(normalizePedido);
@@ -681,9 +763,9 @@ function montarHistoricoLocal(){
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td style="text-align:center"><input type="checkbox" class="hist-select" value="${o.numero}"></td>
-      <td>${o.numero}</td>
-      <td>${o.data}</td>
-      <td>${o.tecnico||'-'}</td>
+      <td class="td-num">${o.numero}</td>
+      <td class="td-data">${o.data}</td>
+      <td class="td-tec">${o.tecnico||'-'}</td>
       <td>${o.itens?.length||0}</td>
       <td>${BRL(o.total||0)}</td>
       <td></td>
@@ -694,6 +776,7 @@ function montarHistoricoLocal(){
       let L=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
       const i=L.findIndex(x=>x.numero===o.numero);
       if(i>=0){ L[i].fluxo=sel.value; localStorage.setItem(LS.ORD, JSON.stringify(L)); toast('Fluxo atualizado: '+sel.value); }
+      aplicaFiltros();
     });
     tr.children[6].appendChild(sel);
     const tdA=tr.children[7];
@@ -703,6 +786,8 @@ function montarHistoricoLocal(){
     tb.appendChild(tr);
   }
   bindSelectAll();
+  popularAnosFromLista(lista);
+  aplicaFiltros();
 }
 
 async function montarHistoricoGlobal({refresh=false}={}){
@@ -714,10 +799,10 @@ async function montarHistoricoGlobal({refresh=false}={}){
     for(const o of lista){
       const tr=document.createElement('tr');
       tr.innerHTML=`
-        <td style="text-align:center"><input type="checkbox" class="hist-select" value="${o.numero}"></td>
-        <td>${o.numero}</td>
-        <td>${o.data}</td>
-        <td>${o.tecnico||'-'}</td>
+        <td style=\"text-align:center\"><input type=\"checkbox\" class=\"hist-select\" value=\"${o.numero}\"></td>
+        <td class=\"td-num\">${o.numero}</td>
+        <td class=\"td-data\">${o.data}</td>
+        <td class=\"td-tec\">${o.tecnico||'-'}</td>
         <td>${o.itens?.length||0}</td>
         <td>${BRL(o.total||0)}</td>
         <td></td>
@@ -740,6 +825,7 @@ async function montarHistoricoGlobal({refresh=false}={}){
           sel.value=o.fluxo||'Supervisor Diversey';
           applyFlowStyle(sel, sel.value);
         }
+        aplicaFiltros();
       });
       tr.children[6].appendChild(sel);
       const tdA=tr.children[7];
@@ -749,6 +835,8 @@ async function montarHistoricoGlobal({refresh=false}={}){
       tb.appendChild(tr);
     }
     bindSelectAll();
+    popularAnosFromLista(lista);
+    aplicaFiltros();
   }catch(e){ console.error(e); toast('Erro ao montar histórico global'); }
 }
 
@@ -778,7 +866,7 @@ function exportXLSXFrom(o){
   XLSX.writeFile(wb, fname);
 }
 
-/* ========= PDF (aprimorado) ========= */
+/* ========= PDF (aprimorado resumido) ========= */
 const PDF_THEME = {
   primary:[15,30,50],
   accent:[16,185,129],
@@ -802,12 +890,10 @@ async function baixarPDFFrom(o){
     const y=24;
     doc.setFillColor(...PDF_THEME.accent);
     doc.rect(0,0,PAGE_W,3,'F');
-    // Marca (ESQUERDA)
     doc.setFont('helvetica','bold'); doc.setFontSize(PDF_THEME.fonts.brand); doc.setTextColor(...PDF_THEME.primary);
     doc.text('Diversey',M,y+12);
     doc.setFontSize(PDF_THEME.fonts.slogan); doc.setTextColor(...PDF_THEME.accent);
     doc.text('A Solenis Company',M,y+26);
-    // Título à esquerda
     doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_THEME.primary); doc.setFontSize(PDF_THEME.fonts.title);
     doc.text(PDF_THEME.title,M,y+48);
     doc.setDrawColor(...PDF_THEME.border);
@@ -933,7 +1019,8 @@ async function enviarPedido(){
 }
 
 function excluirSelecionadosLocal(){
-  const marcados=[...$$('#tabela-hist tbody input.hist-select:checked')].map(chk=>chk.value);
+  const marcados=[...$$('#tabela-hist tbody input.hist-select:checked')].map(chk=>chk.value).filter(v=>{
+    const tr=chkRow(chk).closest('tr'); return tr && tr.style.display!=="none"; function chkRow(val){return document.querySelector(`#tabela-hist tbody input.hist-select[value="${val}"]`);} });
   if(!marcados.length) return toast('Nada selecionado');
   let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   lista=lista.filter(o=>!marcados.includes(o.numero));
@@ -942,7 +1029,8 @@ function excluirSelecionadosLocal(){
 }
 
 async function excluirSelecionadosGlobal(){
-  const marcados=[...$$('#tabela-hist tbody input.hist-select:checked')].map(chk=>chk.value);
+  const marcados=[...$$('#tabela-hist tbody input.hist-select:checked')].map(chk=>chk.value).filter(v=>{
+    const tr=chkRow(chk).closest('tr'); return tr && tr.style.display!=="none"; function chkRow(val){return document.querySelector(`#tabela-hist tbody input.hist-select[value="${val}"]`);} });
   if(!marcados.length) return toast('Nada selecionado');
   try{
     await ensureGlobalCache(true);
@@ -992,11 +1080,8 @@ function bindEvents(){
   $('#btn-hist-ocultar').addEventListener('click',()=>$('#hist-content').style.display='none');
   $('#hist-del').addEventListener('click',()=>{ if(getModo()==='global') excluirSelecionadosGlobal(); else excluirSelecionadosLocal(); });
 
-  document.addEventListener('keydown',e=>{
-    if(e.ctrlKey && e.key==='Enter'){ e.preventDefault(); addRow(); }
-    if(e.ctrlKey && (e.key==='e'||e.key==='E')){ e.preventDefault(); enviarPedido(); }
-    if(e.ctrlKey && (e.key==='p'||e.key==='P')){ e.preventDefault(); baixarPDFFrom(getOrder()); }
-  });
+  // filtros do histórico
+  bindFiltros();
 }
 
 async function init(){
@@ -1010,3 +1095,4 @@ bindEvents(); init();
 </script>
 </body>
 </html>
+
