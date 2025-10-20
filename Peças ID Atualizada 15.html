@@ -37,7 +37,7 @@
     .btn-primary{background:var(--accent);color:#062015;border-color:transparent}
     .btn-danger{background:var(--danger);border:none;color:#fff}
     .ghost{background:#0f172a}
-    main{max-width:min(1280px,92vw);margin:28px auto;padding:0 18px} #tabela-hist th, #tabela-hist td{font-size:12px;}
+    main{max-width:1180px;margin:28px auto;padding:0 16px}
     .card{
       background:var(--panel);border:1px solid var(--border);border-radius:14px;
       padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)
@@ -927,8 +927,8 @@ async function baixarPDFFrom(o){
 
   drawHeader();
   let y=84;
-  const yA=kvTable(y,M,[["Número",o.numero||''],["Data",fmtData(o.data)],["Envio",o.envio||'Normal'],["CEP",fmtCEP(o.cep||'')]],HALF_W);
-  const yB=kvTable(y,M+HALF_W+GAP,[["Técnico",o.tecnico||''],["Endereço",o.endereco||''],["Cidade / UF",`${o.municipio||''} / ${o.uf||''}`]],HALF_W);
+  const yA=kvTable(y,M,[['Número',o.numero||''],['Data',fmtData(o.data)],['Envio',o.envio||'Normal'],['CEP',fmtCEP(o.cep||'')]],HALF_W);
+  const yB=kvTable(y,M+HALF_W+GAP,[['Técnico',o.tecnico||''],['Endereço',o.endereco||''],['Cidade / UF',`${o.municipio||''} / ${o.uf||''}`]],HALF_W);
   y=Math.max(yA,yB)+GAP;
 
   if((o.obs||'').trim()){
@@ -1016,17 +1016,11 @@ async function enviarPedido(){
   const ok = await salvarAtual();
   if(!ok) return;
   toast('Solicitação salva com sucesso!');
-  // prepara para o próximo pedido
-  resetForm();
-  const tecInput = $('#tecnico');
-  if(tecInput) tecInput.focus();
 }
 
 function excluirSelecionadosLocal(){
-  const marcados=[...$$('#tabela-hist tbody tr')]
-    .filter(tr=>tr.style.display!=="none")
-    .map(tr=>{ const chk=tr.querySelector('input.hist-select'); return chk && chk.checked ? chk.value : null; })
-    .filter(Boolean);
+  const marcados=[...$$('#tabela-hist tbody input.hist-select:checked')].map(chk=>chk.value).filter(v=>{
+    const tr=chkRow(chk).closest('tr'); return tr && tr.style.display!=="none"; function chkRow(val){return document.querySelector(`#tabela-hist tbody input.hist-select[value="${val}"]`);} });
   if(!marcados.length) return toast('Nada selecionado');
   let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   lista=lista.filter(o=>!marcados.includes(o.numero));
@@ -1035,10 +1029,8 @@ function excluirSelecionadosLocal(){
 }
 
 async function excluirSelecionadosGlobal(){
-  const marcados=[...$$('#tabela-hist tbody tr')]
-    .filter(tr=>tr.style.display!=="none")
-    .map(tr=>{ const chk=tr.querySelector('input.hist-select'); return chk && chk.checked ? chk.value : null; })
-    .filter(Boolean);
+  const marcados=[...$$('#tabela-hist tbody input.hist-select:checked')].map(chk=>chk.value).filter(v=>{
+    const tr=chkRow(chk).closest('tr'); return tr && tr.style.display!=="none"; function chkRow(val){return document.querySelector(`#tabela-hist tbody input.hist-select[value="${val}"]`);} });
   if(!marcados.length) return toast('Nada selecionado');
   try{
     await ensureGlobalCache(true);
@@ -1063,8 +1055,6 @@ function salvarConfigOneDrive(){
   const cfg=OneDriveStore.setConfig({ shareUrl:$('#onedrive-share').value, accessToken:$('#onedrive-token').value, refreshMinutes:Number($('#onedrive-refresh-min').value||10), fileName:$('#onedrive-arquivo').value });
   fecharModal(); toast('Configuração salva'); setModo('global');
 }
-// Helper para saber se o OneDrive está configurado
-function isOneDriveReady(){ const cfg=OneDriveStore.getConfig(); return !!(cfg.shareUrl && cfg.accessToken); }
 
 /* ========= Init / Eventos ========= */
 function bindEvents(){
@@ -1088,17 +1078,10 @@ function bindEvents(){
   $('#btn-hist').addEventListener('click',()=>{ if(getModo()==='global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal(); });
   $('#btn-hist-mostrar').addEventListener('click',()=>$('#hist-content').style.display='block');
   $('#btn-hist-ocultar').addEventListener('click',()=>$('#hist-content').style.display='none');
-  $('#hist-del').addEventListener('click',()=>{ if(getModo()==='global' && isOneDriveReady()) excluirSelecionadosGlobal(); else excluirSelecionadosLocal(); });
+  $('#hist-del').addEventListener('click',()=>{ if(getModo()==='global') excluirSelecionadosGlobal(); else excluirSelecionadosLocal(); });
 
   // filtros do histórico
   bindFiltros();
-
-  // atalhos
-  document.addEventListener('keydown',e=>{
-    if(e.ctrlKey && e.key==='Enter'){ e.preventDefault(); addRow(); }
-    if(e.ctrlKey && (e.key==='e'||e.key==='E')){ e.preventDefault(); enviarPedido(); }
-    if(e.ctrlKey && (e.key==='p'||e.key==='P')){ e.preventDefault(); baixarPDFFrom(getOrder()); }
-  });
 }
 
 async function init(){
@@ -1112,3 +1095,4 @@ bindEvents(); init();
 </script>
 </body>
 </html>
+
