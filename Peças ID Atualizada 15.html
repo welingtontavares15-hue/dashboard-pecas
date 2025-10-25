@@ -510,7 +510,13 @@ function preencherListas(){
   itensBase.forEach(p=>{ const o=document.createElement('option'); o.value=p.codigo; o.label=`${p.codigo} — ${p.descricao} — ${BRL(p.valor)}`; dlP.appendChild(o); });
 }
 function preencherEndereco(nome){
-  const d=tecnicosBase[nome]; if(!d) return;
+  const d=tecnicosBase[nome];
+  if(!d){
+    $('#endereco').value='';
+    $('#cidadeuf').value='';
+    $('#cep').value='';
+    return;
+  }
   $('#endereco').value = `${d.endereco}${d.bairro? ', '+d.bairro:''}`;
   $('#cidadeuf').value = `${d.municipio} / ${d.uf}`;
   $('#cep').value = d.cep;
@@ -561,14 +567,31 @@ function addRow(pref={}){
   tb.appendChild(tr);
 
   const iCod=tr.querySelector('.codigo'), iDesc=tr.querySelector('.desc'), iQtd=tr.querySelector('.qtd'), iVal=tr.querySelector('.valor');
-  function fill(it){ if(!it) return; iCod.value=it.codigo; iDesc.value=it.descricao; iVal.value=it.valor; calcTotal(); }
-  iCod.addEventListener('change',()=>fill(findItem(iCod.value)));
-  iDesc.addEventListener('change',()=>fill(findItem(iDesc.value)));
+  function fill(it){
+    if(!it) return;
+    iCod.value = it.codigo;
+    iDesc.value = it.descricao;
+    iVal.value = Number(it.valor || 0);
+    calcTotal();
+  }
+  const handleCodeInput = () => {
+    const match = findItem(iCod.value);
+    if (match) fill(match); else calcTotal();
+  };
+  const handleDescInput = () => {
+    const match = findItem(iDesc.value);
+    if (match) fill(match); else calcTotal();
+  };
+  iCod.addEventListener('change', handleCodeInput);
+  iCod.addEventListener('input', handleCodeInput);
+  iDesc.addEventListener('change', handleDescInput);
+  iDesc.addEventListener('input', handleDescInput);
   iQtd.addEventListener('input',()=>{ iQtd.value=clamp(iQtd.value,1,9999); calcTotal(); });
   iVal.addEventListener('input',()=>{ iVal.value=Math.max(0,Number(iVal.value||0)); calcTotal(); });
   tr.querySelector('.del').addEventListener('click',()=>{ tr.remove(); calcTotal(); });
 
   if(pref.codigo){ fill(findItem(pref.codigo)); }
+  requestAnimationFrame(()=>iCod.focus());
   calcTotal();
 }
 function collectItems(){
@@ -1068,10 +1091,13 @@ function isOneDriveReady(){ const cfg=OneDriveStore.getConfig(); return !!(cfg.s
 
 /* ========= Init / Eventos ========= */
 function bindEvents(){
-  $('#btn-add').addEventListener('click',()=>addRow());
+  $('#btn-add').addEventListener('click',e=>{ e.preventDefault(); addRow(); });
   $('#desc-valor').addEventListener('input',calcTotal);
   $('#frete').addEventListener('input',calcTotal);
-  $('#tecnico').addEventListener('change',()=>preencherEndereco($('#tecnico').value));
+  const tecnicoEl = $('#tecnico');
+  const updateEndereco = () => preencherEndereco(tecnicoEl.value);
+  tecnicoEl.addEventListener('change', updateEndereco);
+  tecnicoEl.addEventListener('input', updateEndereco);
   $('#btn-enviar').addEventListener('click',enviarPedido);
   $('#btn-xlsx').addEventListener('click',()=>exportXLSXFrom(getOrder()));
   $('#btn-pdf').addEventListener('click',()=>baixarPDFFrom(getOrder()));
