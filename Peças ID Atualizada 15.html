@@ -468,7 +468,23 @@ const LS = { ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', MODO:'sp_
 const GLOBAL_REFRESH_MIN_DEFAULT = 10;
 const DEFAULT_ONEDRIVE = { shareUrl:'', accessToken:'', refreshMinutes:GLOBAL_REFRESH_MIN_DEFAULT, fileName:'pedidos.json' };
 const getModo = () => localStorage.getItem(LS.MODO) || 'global';
-const setModo = (m) => { localStorage.setItem(LS.MODO, m); $('#badge-modo').textContent = 'Modo: ' + m.toUpperCase(); gerarNumero(); if (m === 'global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal(); updateODStatus(); };
+const setModo = (m) => {
+  localStorage.setItem(LS.MODO, m);
+  $('#badge-modo').textContent = 'Modo: ' + m.toUpperCase();
+
+  gerarNumero();
+
+  if (m === 'global') {
+    updateODStatus();
+    if (!isOneDriveReady()) {
+      toast('⚠️ OneDrive não configurado/conectado. Clique em "⚙️ OneDrive" para configurar.');
+    }
+    montarHistoricoGlobal({ refresh: true });
+  } else {
+    montarHistoricoLocal();
+    updateODStatus();
+  }
+};
 
 /* ========= OneDrive Sync ========= */
 const OneDriveStore = (()=>{
@@ -577,8 +593,12 @@ function proximoNumeroGlobal(){
 async function gerarNumero(){
   if(getModo()==='global'){
     const field=$('#req-num'); field.value='Sincronizando OneDrive...';
-    try{ await ensureGlobalCache(); field.value=proximoNumeroGlobal(); }
-    catch(e){ console.error(e); toast('Não foi possível ler os pedidos do OneDrive.'); field.value=''; }
+    try{
+      if (!isOneDriveReady()) throw new Error('OneDrive não configurado.');
+      await ensureGlobalCache();
+      field.value=proximoNumeroGlobal();
+    }
+    catch(e){ console.error(e); toast('⚠️ '+(e.message||'Não foi possível ler os pedidos do OneDrive.')); field.value=''; }
   } else { gerarNumeroLocal(); }
 }
 
@@ -740,6 +760,12 @@ function salvarLocal(){
 }
 async function salvarGlobal(){
   const dados=coletarPedidoDados(); if(!dados) return false;
+
+  if (!isOneDriveReady()) {
+    toast('⚠️ OneDrive não configurado/conectado. Abra "⚙️ OneDrive" e informe link + token.');
+    return false;
+  }
+
   try{
     await ensureGlobalCache();
     const lista=GLOBAL_CACHE.orders.map(o=>normalizePedido(o));
@@ -890,6 +916,13 @@ function montarHistoricoLocal(){
 
 async function montarHistoricoGlobal({refresh=false}={}){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
+
+  if (!isOneDriveReady()) {
+    $('#hist-empty').style.display='block';
+    toast('⚠️ OneDrive não configurado/conectado.');
+    return;
+  }
+
   try{
     await ensureGlobalCache(refresh);
     const lista=GLOBAL_CACHE.orders.slice().map(o=>normalizePedido(o)).sort(byRecentFirst);
@@ -1278,7 +1311,16 @@ function bindEvents(){
   $('#onedrive-cancelar').addEventListener('click',fecharModal);
   $('#onedrive-testar').addEventListener('click',testarOneDrive);
   $('#onedrive-salvar').addEventListener('click',salvarConfigOneDrive);
-  $('#btn-global-sync').addEventListener('click',async()=>{ try{ await ensureGlobalCache(true); await montarHistoricoGlobal({refresh:true}); toast('Sincronizado com OneDrive'); }catch(e){ toast('Falha ao sincronizar'); } });
+
+  $('#btn-global-sync').addEventListener('click', async()=>{
+    if(getModo()!=='global') return toast('Sincronização global só no modo GLOBAL');
+    if(!isOneDriveReady()) return toast('⚠️ OneDrive não configurado/conectado.');
+    try{
+      await ensureGlobalCache(true);
+      await montarHistoricoGlobal({refresh:true});
+      toast('Sincronizado com OneDrive');
+    }catch(e){ toast(e.message||'Falha ao sincronizar'); }
+  });
 
   $('#btn-hist').addEventListener('click',()=>{ if(getModo()==='global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal(); });
   $('#btn-hist-mostrar').addEventListener('click',()=>$('#hist-content').style.display='block');
@@ -1309,7 +1351,12 @@ async function init(){
   preencherListas();
   if(!$('#tbl-itens tbody').children.length) addRow();
   updateODStatus(); updateSyncBadge();
-  if(getModo()==='global'){ try{ await ensureGlobalCache(); }catch(_){} }
+
+  if(getModo()==='global' && !isOneDriveReady()){
+    toast('⚠️ OneDrive não configurado/conectado. Clique em "⚙️ OneDrive" para configurar.');
+  }
+
+  if(getModo()==='global'){ try{ await ensureGlobalCache(); }catch(e){ toast(e.message||'Falha ao conectar ao OneDrive'); } }
   gerarNumero();
   if(getModo()==='global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal();
 }
