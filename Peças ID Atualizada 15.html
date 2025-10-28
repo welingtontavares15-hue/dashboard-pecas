@@ -28,7 +28,7 @@
     .brand{display:flex;flex-direction:column;line-height:1.15}
     .brand .line1{font-weight:800;font-size:22px;color:#fff}
     .brand .line2{font-weight:600;font-size:12px;color:var(--accent);letter-spacing:.4px}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     button{
       background:#121a2a;border:1px solid var(--border);color:var(--text);
       border-radius:10px;padding:8px 12px;cursor:pointer;transition:.2s
@@ -53,7 +53,7 @@
     input[readonly]{opacity:.9}
     table{width:100%;border-collapse:collapse}
     th,td{border:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:middle}
-    th{background:#0f172a;color:var(--accent);position:sticky;top:72px;z-index:2}
+    th{background:#0f172a;color:#10b981;position:sticky;top:72px;z-index:2}
     tr:nth-child(even){background:#1f2e44}
     tr:hover{background:#263956}
     .right{text-align:right}
@@ -71,16 +71,31 @@
     .toast.show{display:block}
     select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
     .flow-sup{background:var(--warn)} .flow-forn{background:var(--info)} .flow-rota{background:var(--step)} .flow-ent{background:var(--ok)}
+    .toolbar .sep{width:1px;height:24px;background:var(--border);margin:0 6px}
 
     /* ======= HISTÓRICO — filtros e layout ======= */
     .hist-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
     .hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
     .hist-filtros input,.hist-filtros select{max-width:220px}
-    #tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end}
+    #tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
     #tabela-hist th:first-child, #tabela-hist td:first-child{position:sticky;left:0;background:#0f172a;z-index:3}
     .hist-empty{color:var(--muted);padding:8px 0}
     .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
     .count{color:var(--muted);font-size:12px}
+
+    /* ======= Scrollbars customizados (WebKit e Firefox) ======= */
+    @media (pointer: fine) {
+      :root { --scrollbar-thumb: var(--border); --scrollbar-thumb-hover: var(--accent); }
+      body, main, .modal, .card, #hist-content, #tabela-hist, #tbl-itens { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+      ::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+
+    /* ======= Feedback visual campos inválidos ======= */
+    .invalid { border-color: var(--danger) !important; box-shadow: 0 0 0 2px rgba(239,68,68,.25); }
   </style>
 </head>
 <body>
@@ -91,15 +106,20 @@
         <span class="line2">A Solenis Company</span>
       </div>
       <span id="badge-modo" class="badge">Modo: GLOBAL</span>
+      <span id="badge-od" class="badge" title="Status OneDrive">OneDrive: não configurado</span>
     </div>
     <div class="toolbar">
       <button id="btn-modo-local">💾 Local</button>
       <button id="btn-modo-global">☁️ Global</button>
+      <span class="sep"></span>
       <button id="btn-onedrive-config" class="ghost">⚙️ OneDrive</button>
       <button id="btn-global-sync" class="ghost">🔄 Sincronizar</button>
+      <span id="badge-sync" class="badge" title="Próxima atualização automática">Auto-sync: 10 min</span>
+      <span class="sep"></span>
       <button id="btn-xlsx">📊 Excel</button>
       <button id="btn-pdf">📄 PDF</button>
       <button id="btn-enviar" class="btn-primary">🚀 Enviar</button>
+      <button id="btn-clear" class="ghost">🧹 Limpar</button>
     </div>
   </header>
 
@@ -141,7 +161,7 @@
           </label>
         </div>
       </div>
-      <div class="small">Atalhos: <kbd>Ctrl</kbd> + <kbd>Enter</kbd> adiciona item • <kbd>Ctrl</kbd> + <kbd>E</kbd> envia • <kbd>Ctrl</kbd> + <kbd>P</kbd> PDF</div>
+      <div class="small">Atalhos: Ctrl + Enter adiciona item • Ctrl + E envia • Ctrl + P PDF</div>
     </section>
 
     <section class="card">
@@ -156,15 +176,20 @@
             <th>Descrição</th>
             <th style="width:130px" class="right">Valor Unit.</th>
             <th style="width:140px" class="right">Subtotal</th>
-            <th style="width:96px">Ações</th>
+            <th style="width:140px">Ações</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
 
       <div class="actions-row">
-        <button id="btn-add" class="btn-primary">➕ Adicionar Item</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="btn-add" class="btn-primary">➕ Adicionar Item</button>
+          <button id="btn-add-blank" class="ghost" title="Linha em branco">➕ Linha em branco</button>
+          <button id="btn-merge" class="ghost" title="Mesclar itens iguais">🧩 Mesclar itens iguais</button>
+        </div>
         <div class="totais">
+          <span id="itens-count" class="pill">0 itens</span>
           <span>Subtotal:</span> <strong id="subtotal">R$ 0,00</strong>
           <span>Desconto (R$):</span> <input id="desc-valor" type="number" step="0.01" value="0">
           <span>Frete (R$):</span> <input id="frete" type="number" step="0.01" value="0">
@@ -180,6 +205,21 @@
           <button id="btn-hist-mostrar" class="ghost">👁️ Mostrar</button>
           <button id="btn-hist-ocultar" class="ghost">🙈 Ocultar</button>
           <button id="btn-hist" class="btn-primary">Atualizar</button>
+          <span class="sep"></span>
+          <select id="bulk-status" title="Aplicar status aos selecionados" style="min-width:200px">
+            <option value="">Status em lote...</option>
+            <option>Supervisor Diversey</option>
+            <option>Fornecedor</option>
+            <option>Rota de Entrega</option>
+            <option>Entregue</option>
+          </select>
+          <button id="bulk-apply" class="ghost">Aplicar</button>
+          <span class="sep"></span>
+          <button id="hist-export-xlsx" class="ghost" title="Exportar histórico (Excel)">📊 Exportar</button>
+          <button id="hist-export" class="ghost" title="Exportar histórico (JSON)">📤 Exportar JSON</button>
+          <button id="hist-import" class="ghost" title="Importar histórico (JSON)">📥 Importar JSON</button>
+          <input id="hist-import-file" type="file" accept="application/json" style="display:none">
+          <span class="sep"></span>
           <button id="hist-del" class="btn-danger">🗑️ Excluir selecionados</button>
         </div>
       </div>
@@ -271,6 +311,7 @@ const clamp = (v,min,max)=>Math.min(max,Math.max(min,Number(v||0)));
 const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
 const fmtData = s => s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s.slice(8,10)}/${s.slice(5,7)}/${s.slice(0,4)}` : s;
 const fmtCEP  = s => (s||'').replace(/\D/g,'').replace(/(\d{5})(\d{3}).*/, '$1-$2');
+const visible = (el)=>!el || el.style.display!== 'none';
 
 /* ========= Bases ========= */
 const itensBase = [
@@ -427,7 +468,7 @@ const LS = { ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', MODO:'sp_
 const GLOBAL_REFRESH_MIN_DEFAULT = 10;
 const DEFAULT_ONEDRIVE = { shareUrl:'', accessToken:'', refreshMinutes:GLOBAL_REFRESH_MIN_DEFAULT, fileName:'pedidos.json' };
 const getModo = () => localStorage.getItem(LS.MODO) || 'global';
-const setModo = (m) => { localStorage.setItem(LS.MODO, m); $('#badge-modo').textContent = 'Modo: ' + m.toUpperCase(); gerarNumero(); if (m === 'global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal(); };
+const setModo = (m) => { localStorage.setItem(LS.MODO, m); $('#badge-modo').textContent = 'Modo: ' + m.toUpperCase(); gerarNumero(); if (m === 'global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal(); updateODStatus(); };
 
 /* ========= OneDrive Sync ========= */
 const OneDriveStore = (()=>{
@@ -487,7 +528,7 @@ function normalizePedido(raw={}){
     : [];
   return { numero:(raw.numero||'').toString(), data:raw.data || new Date().toISOString().slice(0,10), tecnico:raw.tecnico || '', endereco:raw.endereco || '', municipio:raw.municipio || '', uf:raw.uf || '', cep:raw.cep || '', envio:raw.envio || 'Normal', obs:raw.obs || '', subtotal:Number(raw.subtotal||0)||0, total:Number(raw.total||0)||0, descValor:Number(raw.descValor||0)||0, frete:Number(raw.frete||0)||0, fluxo:raw.fluxo || 'Supervisor Diversey', itens };
 }
-function setGlobalState(lista, etag){ GLOBAL_CACHE.orders=(lista||[]).map(normalizePedido); GLOBAL_CACHE.etag=etag||null; GLOBAL_CACHE.loaded=true; GLOBAL_CACHE.lastSync=Date.now(); }
+function setGlobalState(lista, etag){ GLOBAL_CACHE.orders=(lista||[]).map(normalizePedido); GLOBAL_CACHE.etag=etag||null; GLOBAL_CACHE.loaded=true; GLOBAL_CACHE.lastSync=Date.now(); updateSyncBadge(); }
 async function ensureGlobalCache(force=false){
   if(GLOBAL_CACHE.loading){ try{ await GLOBAL_CACHE.loading; }catch(_){ } if(!force) return GLOBAL_CACHE; }
   const cfg=OneDriveStore.getConfig(); const refreshMs=Math.max(1, Number(cfg.refreshMinutes||GLOBAL_REFRESH_MIN_DEFAULT))*60000;
@@ -510,13 +551,7 @@ function preencherListas(){
   itensBase.forEach(p=>{ const o=document.createElement('option'); o.value=p.codigo; o.label=`${p.codigo} — ${p.descricao} — ${BRL(p.valor)}`; dlP.appendChild(o); });
 }
 function preencherEndereco(nome){
-  const d=tecnicosBase[nome];
-  if(!d){
-    $('#endereco').value='';
-    $('#cidadeuf').value='';
-    $('#cep').value='';
-    return;
-  }
+  const d=tecnicosBase[nome]; if(!d) return;
   $('#endereco').value = `${d.endereco}${d.bairro? ', '+d.bairro:''}`;
   $('#cidadeuf').value = `${d.municipio} / ${d.uf}`;
   $('#cep').value = d.cep;
@@ -551,7 +586,7 @@ async function gerarNumero(){
 function findItem(input){
   const s=(input||'').toString().trim().toLowerCase(); if(!s) return null;
   const byCode=itensBase.find(x=>x.codigo.toLowerCase()===s); if(byCode) return byCode;
-  return itensBase.find(x=>x.descricao.toLowerCase().startsWith(s))||null;
+  return itensBase.find(x=>x.descricao.toLowerCase().includes(s))||null;
 }
 function addRow(pref={}){
   const tb=$('#tbl-itens tbody');
@@ -563,36 +598,59 @@ function addRow(pref={}){
     <td><input class="desc" placeholder="Descrição" value="${pref.descricao||''}"></td>
     <td><input type="number" step="0.01" class="valor right" min="0" value="${Number(pref.valor||0)||''}"></td>
     <td class="sub right">R$ 0,00</td>
-    <td><button class="btn-danger del">Excluir</button></td>`;
+    <td>
+      <button class="ghost dup" title="Duplicar linha">⧉</button>
+      <button class="btn-danger del">Excluir</button>
+    </td>`;
   tb.appendChild(tr);
 
   const iCod=tr.querySelector('.codigo'), iDesc=tr.querySelector('.desc'), iQtd=tr.querySelector('.qtd'), iVal=tr.querySelector('.valor');
-  function fill(it){
-    if(!it) return;
-    iCod.value = it.codigo;
-    iDesc.value = it.descricao;
-    iVal.value = Number(it.valor || 0);
-    calcTotal();
-  }
-  const handleCodeInput = () => {
-    const match = findItem(iCod.value);
-    if (match) fill(match); else calcTotal();
-  };
-  const handleDescInput = () => {
-    const match = findItem(iDesc.value);
-    if (match) fill(match); else calcTotal();
-  };
-  iCod.addEventListener('change', handleCodeInput);
-  iCod.addEventListener('input', handleCodeInput);
-  iDesc.addEventListener('change', handleDescInput);
-  iDesc.addEventListener('input', handleDescInput);
-  iQtd.addEventListener('input',()=>{ iQtd.value=clamp(iQtd.value,1,9999); calcTotal(); });
-  iVal.addEventListener('input',()=>{ iVal.value=Math.max(0,Number(iVal.value||0)); calcTotal(); });
+  function fill(it){ if(!it) return; iCod.value=it.codigo; iDesc.value=it.descricao; iVal.value=it.valor; calcTotal(); }
+  iCod.addEventListener('change',()=>fill(findItem(iCod.value)));
+  iDesc.addEventListener('change',()=>fill(findItem(iDesc.value)));
+  iQtd.addEventListener('input',()=>{ iQtd.value=clamp(iQtd.value,1,9999); calcTotal(); validateRow(tr); });
+  iVal.addEventListener('input',()=>{ iVal.value=Math.max(0,Number(iVal.value||0)); calcTotal(); validateRow(tr); });
   tr.querySelector('.del').addEventListener('click',()=>{ tr.remove(); calcTotal(); });
+  tr.querySelector('.dup').addEventListener('click',()=>{
+    addRow({
+      codigo: iCod.value.trim().toUpperCase(),
+      idMaquina: tr.querySelector('.idmaq').value.trim(),
+      qtd: clamp(iQtd.value,1,9999),
+      descricao: iDesc.value.trim(),
+      valor: Math.max(0, Number(iVal.value)||0)
+    });
+  });
 
   if(pref.codigo){ fill(findItem(pref.codigo)); }
-  requestAnimationFrame(()=>iCod.focus());
   calcTotal();
+}
+function mergeDuplicateItems(){
+  const rows=[...$$('#tbl-itens tbody tr')];
+  const map=new Map();
+  rows.forEach(tr=>{
+    const codigo=(tr.querySelector('.codigo').value||'').trim().toUpperCase();
+    const desc=(tr.querySelector('.desc').value||'').trim();
+    const val=Math.max(0, Number(tr.querySelector('.valor').value)||0);
+    const id=(tr.querySelector('.idmaq').value||'').trim();
+    const key=[codigo,desc,val,id].join('|');
+    const qtd=clamp(tr.querySelector('.qtd').value,1,9999);
+    if(!map.has(key)) map.set(key,{tr, qtd});
+    else { const e=map.get(key); e.qtd += qtd; tr.remove(); }
+  });
+  map.forEach(({tr,qtd})=>{ tr.querySelector('.qtd').value=clamp(qtd,1,9999); });
+  calcTotal();
+}
+function validateRow(tr){
+  const iDesc=tr.querySelector('.desc');
+  const iQtd=tr.querySelector('.qtd');
+  const iVal=tr.querySelector('.valor');
+  const okDesc=iDesc.value.trim().length>0;
+  const okQtd=Number(iQtd.value)>=1;
+  const okVal=Number(iVal.value)>=0;
+  [iDesc,iQtd,iVal].forEach(el=>el.classList.remove('invalid'));
+  if(!okDesc) iDesc.classList.add('invalid');
+  if(!okQtd) iQtd.classList.add('invalid');
+  if(!okVal) iVal.classList.add('invalid');
 }
 function collectItems(){
   const itens=[]; $$('#tbl-itens tbody tr').forEach(tr=>{
@@ -605,17 +663,20 @@ function collectItems(){
   }); return itens;
 }
 function calcTotal(){
-  let subtotal=0;
+  let subtotal=0, count=0;
   $$('#tbl-itens tbody tr').forEach(tr=>{
     const q=clamp(tr.querySelector('.qtd').value,1,9999);
     const v=Math.max(0, Number(tr.querySelector('.valor').value)||0);
     const s=q*v; subtotal+=s; tr.querySelector('.sub').textContent=BRL(s);
+    const descOk=tr.querySelector('.desc').value.trim().length>0;
+    if(descOk && q>0) count++;
   });
   const desc=Math.max(0, Number($('#desc-valor').value)||0);
   const frete=Math.max(0, Number($('#frete').value)||0);
   const total=Math.max(0, subtotal - desc + frete);
   $('#subtotal').textContent=BRL(subtotal);
   $('#total-geral').textContent=BRL(total);
+  $('#itens-count').textContent = `${count} ${count===1?'item':'itens'}`;
   return {subtotal, descValor:desc, frete, total};
 }
 
@@ -728,8 +789,15 @@ async function abrirGlobal(numero){
     preencherFormularioPedido(o); toast('Pedido aberto (global): '+numero);
   }catch(e){ console.error(e); toast('Falha ao abrir pedido do OneDrive'); }
 }
+function duplicarNoFormulario(o){
+  if(!o) return;
+  preencherFormularioPedido(o);
+  if(getModo()==='global'){ $('#req-num').value = proximoNumeroGlobal(); }
+  else { gerarNumeroLocal(); }
+  toast('Pedido duplicado no formulário (defina ajustes e envie)');
+}
 
-// ====== NOVO: filtros do histórico ======
+// ====== Filtros do histórico ======
 function parseYYYYMMDD(s){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||''); if(!m) return null; return {year:+m[1], month:+m[2]}; }
 function updateHistCount(){
   const rows=[...$$('#tabela-hist tbody tr')];
@@ -776,6 +844,12 @@ function bindFiltros(){
     $('#f-num').value=''; $('#f-mes').value=''; $('#f-ano').value=''; $('#f-tec').value=''; $('#f-status').value=''; aplicaFiltros();
   });
 }
+function getSelecionadosVisiveis(){
+  return [...$$('#tabela-hist tbody tr')]
+    .filter(tr=>tr.style.display!=="none")
+    .map(tr=>{ const chk=tr.querySelector('input.hist-select'); return chk && chk.checked ? chk.value : null; })
+    .filter(Boolean);
+}
 
 function montarHistoricoLocal(){
   const tb=$('#tabela-hist tbody'); tb.innerHTML='';
@@ -804,6 +878,7 @@ function montarHistoricoLocal(){
     tr.children[6].appendChild(sel);
     const tdA=tr.children[7];
     tdA.appendChild(btn('Abrir',()=>abrirLocal(o.numero)));
+    tdA.appendChild(btn('↪️ Duplicar',()=>duplicarNoFormulario(o)));
     tdA.appendChild(btn('📊 Excel',()=>exportXLSXFrom(o)));
     tdA.appendChild(btn('📄 PDF',()=>baixarPDFFrom(o)));
     tb.appendChild(tr);
@@ -822,10 +897,10 @@ async function montarHistoricoGlobal({refresh=false}={}){
     for(const o of lista){
       const tr=document.createElement('tr');
       tr.innerHTML=`
-        <td style=\"text-align:center\"><input type=\"checkbox\" class=\"hist-select\" value=\"${o.numero}\"></td>
-        <td class=\"td-num\">${o.numero}</td>
-        <td class=\"td-data\">${o.data}</td>
-        <td class=\"td-tec\">${o.tecnico||'-'}</td>
+        <td style="text-align:center"><input type="checkbox" class="hist-select" value="${o.numero}"></td>
+        <td class="td-num">${o.numero}</td>
+        <td class="td-data">${o.data}</td>
+        <td class="td-tec">${o.tecnico||'-'}</td>
         <td>${o.itens?.length||0}</td>
         <td>${BRL(o.total||0)}</td>
         <td></td>
@@ -853,6 +928,7 @@ async function montarHistoricoGlobal({refresh=false}={}){
       tr.children[6].appendChild(sel);
       const tdA=tr.children[7];
       tdA.appendChild(btn('Abrir',()=>abrirGlobal(o.numero)));
+      tdA.appendChild(btn('↪️ Duplicar',()=>duplicarNoFormulario(o)));
       tdA.appendChild(btn('📊 Excel',()=>exportXLSXFrom(o)));
       tdA.appendChild(btn('📄 PDF',()=>baixarPDFFrom(o)));
       tb.appendChild(tr);
@@ -889,7 +965,58 @@ function exportXLSXFrom(o){
   XLSX.writeFile(wb, fname);
 }
 
-/* ========= PDF (aprimorado resumido) ========= */
+/* ========= Export/Import Histórico ========= */
+async function exportHistoricoXLSX(){
+  const numeros=[...$$('#tabela-hist tbody tr')].filter(tr=>tr.style.display!=="none").map(tr=>tr.querySelector('.hist-select')?.value).filter(Boolean);
+  let lista=[];
+  if(getModo()==='global'){ await ensureGlobalCache(); lista = GLOBAL_CACHE.orders.slice(); }
+  else { lista = JSON.parse(localStorage.getItem(LS.ORD)||'[]'); }
+  const pedidos = lista.map(normalizePedido).filter(p=>numeros.includes(p.numero));
+  const wb = XLSX.utils.book_new();
+  const header=['Número','Data','Técnico','Itens','Total','Fluxo','Envio','CEP','Cidade','UF'];
+  const rows = pedidos.map(p=>[p.numero,p.data,p.tecnico,p.itens?.length||0,p.total,p.fluxo,p.envio,fmtCEP(p.cep),p.municipio,p.uf]);
+  const ws1 = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  XLSX.utils.book_append_sheet(wb, ws1, 'Pedidos');
+
+  const headerItens=['Número','Código','ID Máquina','Qtd','Descrição','Valor Unit','Subtotal'];
+  const rowsItens=[];
+  pedidos.forEach(p=> (p.itens||[]).forEach(it=> rowsItens.push([p.numero,it.codigo,it.idMaquina,it.qtd,it.descricao,it.valor,it.qtd*it.valor])));
+  const ws2 = XLSX.utils.aoa_to_sheet([headerItens, ...rowsItens]);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Itens');
+
+  XLSX.writeFile(wb, `historico-${getModo()}-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Histórico exportado (Excel)');
+}
+function exportHistoricoJSON(){
+  if(getModo()!=='local'){ return toast('Exportar JSON disponível apenas no modo LOCAL'); }
+  const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]').map(normalizePedido);
+  const blob=new Blob([JSON.stringify(lista,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`historico-local-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importHistoricoJSON(file){
+  if(getModo()!=='local'){ toast('Importar JSON disponível apenas no modo LOCAL'); return; }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const arr=JSON.parse(reader.result||'[]');
+      if(!Array.isArray(arr)) throw new Error('JSON deve ser um array de pedidos');
+      const novos=arr.map(normalizePedido);
+      const atual=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+      const map=new Map(atual.map(p=>[p.numero,p]));
+      let add=0, upd=0;
+      novos.forEach(n=>{ if(map.has(n.numero)){ map.set(n.numero,n); upd++; } else { map.set(n.numero,n); add++; } });
+      const merged=[...map.values()];
+      localStorage.setItem(LS.ORD, JSON.stringify(merged));
+      montarHistoricoLocal();
+      toast(`Importado: ${add} novos, ${upd} atualizados`);
+    }catch(e){ toast('Falha ao importar JSON'); }
+  };
+  reader.readAsText(file);
+}
+
+/* ========= PDF ========= */
 const PDF_THEME = {
   primary:[15,30,50],
   accent:[16,185,129],
@@ -1028,6 +1155,28 @@ async function baixarPDFFrom(o){
   a.click();URL.revokeObjectURL(a.href);
 }
 
+/* ========= UI/Status Aux ========= */
+function updateODStatus(){
+  const ready=isOneDriveReady();
+  const badge=$('#badge-od');
+  if(!badge) return;
+  if(getModo()==='global'){
+    badge.textContent = `OneDrive: ${ready?'OK ✅':'não configurado'}`;
+  }else{
+    badge.textContent = 'OneDrive: inativo (modo local)';
+  }
+}
+function updateSyncBadge(){
+  const cfg=OneDriveStore.getConfig();
+  const badge=$('#badge-sync');
+  if(!badge) return;
+  if(getModo()==='global'){
+    badge.textContent=`Auto-sync: ${cfg.refreshMinutes||GLOBAL_REFRESH_MIN_DEFAULT} min`;
+  }else{
+    badge.textContent='Auto-sync: n/d';
+  }
+}
+
 /* ========= Ações UI ========= */
 function resetForm(){
   $('#tecnico').value=''; $('#endereco').value=''; $('#cidadeuf').value=''; $('#cep').value='';
@@ -1046,10 +1195,7 @@ async function enviarPedido(){
 }
 
 function excluirSelecionadosLocal(){
-  const marcados=[...$$('#tabela-hist tbody tr')]
-    .filter(tr=>tr.style.display!=="none")
-    .map(tr=>{ const chk=tr.querySelector('input.hist-select'); return chk && chk.checked ? chk.value : null; })
-    .filter(Boolean);
+  const marcados=getSelecionadosVisiveis();
   if(!marcados.length) return toast('Nada selecionado');
   let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
   lista=lista.filter(o=>!marcados.includes(o.numero));
@@ -1058,10 +1204,7 @@ function excluirSelecionadosLocal(){
 }
 
 async function excluirSelecionadosGlobal(){
-  const marcados=[...$$('#tabela-hist tbody tr')]
-    .filter(tr=>tr.style.display!=="none")
-    .map(tr=>{ const chk=tr.querySelector('input.hist-select'); return chk && chk.checked ? chk.value : null; })
-    .filter(Boolean);
+  const marcados=getSelecionadosVisiveis();
   if(!marcados.length) return toast('Nada selecionado');
   try{
     await ensureGlobalCache(true);
@@ -1070,6 +1213,32 @@ async function excluirSelecionadosGlobal(){
     await montarHistoricoGlobal({refresh:true});
     toast('Excluídos no OneDrive: '+marcados.length);
   }catch(e){ console.error(e); toast('Falha ao excluir no OneDrive'); }
+}
+/* Bulk status */
+async function aplicarStatusEmLote(){
+  const status = $('#bulk-status').value;
+  if(!status) return toast('Selecione um status');
+  const nums = getSelecionadosVisiveis();
+  if(!nums.length) return toast('Nada selecionado');
+  if(status==='Entregue' && !confirm('Confirmar entrega em lote?')) return;
+  if(getModo()==='global'){
+    try{
+      await ensureGlobalCache();
+      const lista=GLOBAL_CACHE.orders.map(normalizePedido);
+      let upd=0;
+      lista.forEach(p=>{ if(nums.includes(p.numero)){ p.fluxo=status; upd++; }});
+      await salvarListaGlobal(lista);
+      await montarHistoricoGlobal({refresh:false});
+      toast(`Atualizados (global): ${upd}`);
+    }catch(e){ console.error(e); toast('Falha ao aplicar lote (global)'); }
+  }else{
+    let L=(JSON.parse(localStorage.getItem(LS.ORD)||'[]')||[]);
+    let upd=0;
+    L=L.map(p=>{ if(nums.includes(p.numero)){ upd++; return {...p, fluxo:status}; } return p; });
+    localStorage.setItem(LS.ORD, JSON.stringify(L));
+    montarHistoricoLocal();
+    toast(`Atualizados (local): ${upd}`);
+  }
 }
 
 /* ========= OneDrive Modal ========= */
@@ -1084,23 +1253,23 @@ async function testarOneDrive(){
 }
 function salvarConfigOneDrive(){
   const cfg=OneDriveStore.setConfig({ shareUrl:$('#onedrive-share').value, accessToken:$('#onedrive-token').value, refreshMinutes:Number($('#onedrive-refresh-min').value||10), fileName:$('#onedrive-arquivo').value });
-  fecharModal(); toast('Configuração salva'); setModo('global');
+  fecharModal(); toast('Configuração salva'); setModo('global'); updateSyncBadge();
 }
 // Helper para saber se o OneDrive está configurado
 function isOneDriveReady(){ const cfg=OneDriveStore.getConfig(); return !!(cfg.shareUrl && cfg.accessToken); }
 
 /* ========= Init / Eventos ========= */
 function bindEvents(){
-  $('#btn-add').addEventListener('click',e=>{ e.preventDefault(); addRow(); });
+  $('#btn-add').addEventListener('click',()=>addRow());
+  $('#btn-add-blank').addEventListener('click',()=>addRow({}));
+  $('#btn-merge').addEventListener('click',mergeDuplicateItems);
   $('#desc-valor').addEventListener('input',calcTotal);
   $('#frete').addEventListener('input',calcTotal);
-  const tecnicoEl = $('#tecnico');
-  const updateEndereco = () => preencherEndereco(tecnicoEl.value);
-  tecnicoEl.addEventListener('change', updateEndereco);
-  tecnicoEl.addEventListener('input', updateEndereco);
+  $('#tecnico').addEventListener('change',()=>preencherEndereco($('#tecnico').value));
   $('#btn-enviar').addEventListener('click',enviarPedido);
   $('#btn-xlsx').addEventListener('click',()=>exportXLSXFrom(getOrder()));
   $('#btn-pdf').addEventListener('click',()=>baixarPDFFrom(getOrder()));
+  $('#btn-clear').addEventListener('click',resetForm);
 
   $('#btn-modo-local').addEventListener('click',()=>{ setModo('local'); montarHistoricoLocal(); toast('Modo LOCAL'); });
   $('#btn-modo-global').addEventListener('click',()=>{ setModo('global'); toast('Modo GLOBAL'); });
@@ -1116,20 +1285,30 @@ function bindEvents(){
   $('#btn-hist-ocultar').addEventListener('click',()=>$('#hist-content').style.display='none');
   $('#hist-del').addEventListener('click',()=>{ if(getModo()==='global' && isOneDriveReady()) excluirSelecionadosGlobal(); else excluirSelecionadosLocal(); });
 
+  // Export/Import Histórico
+  $('#hist-export-xlsx').addEventListener('click',exportHistoricoXLSX);
+  $('#hist-export').addEventListener('click',exportHistoricoJSON);
+  $('#hist-import').addEventListener('click',()=>$('#hist-import-file').click());
+  $('#hist-import-file').addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) importHistoricoJSON(f); e.target.value=''; });
+
+  // Status em lote
+  $('#bulk-apply').addEventListener('click',aplicarStatusEmLote);
+
   // filtros do histórico
   bindFiltros();
 
   // atalhos
   document.addEventListener('keydown',e=>{
-    if(e.ctrlKey && e.key==='Enter'){ e.preventDefault(); addRow(); }
-    if(e.ctrlKey && (e.key==='e'||e.key==='E')){ e.preventDefault(); enviarPedido(); }
-    if(e.ctrlKey && (e.key==='p'||e.key==='P')){ e.preventDefault(); baixarPDFFrom(getOrder()); }
+    if(e.ctrlKey && e.key.toLowerCase()==='enter'){ e.preventDefault(); addRow(); }
+    if(e.ctrlKey && e.key.toLowerCase()==='e'){ e.preventDefault(); enviarPedido(); }
+    if(e.ctrlKey && e.key.toLowerCase()==='p'){ e.preventDefault(); baixarPDFFrom(getOrder()); }
   });
 }
 
 async function init(){
   preencherListas();
   if(!$('#tbl-itens tbody').children.length) addRow();
+  updateODStatus(); updateSyncBadge();
   if(getModo()==='global'){ try{ await ensureGlobalCache(); }catch(_){} }
   gerarNumero();
   if(getModo()==='global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal();
