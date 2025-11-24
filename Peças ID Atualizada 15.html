@@ -252,6 +252,7 @@ async function api(rota, payload){
   }
   const resp = await fetch(API_URL, {
     method:'POST',
+    headers: {"Content-Type": "application/json"}, // CORREÇÃO AQUI
     body:JSON.stringify(Object.assign({rota}, payload || {}))
   });
   let data;
@@ -308,7 +309,6 @@ const itensBase = [
 {"codigo":"CS008","descricao":"Bicos Injetores Do Braço HD-50/HD-80","valor":114.48},
 {"codigo":"CS009","descricao":"Boiler HD-50","valor":2033.00},
 {"codigo":"CS010","descricao":"Boiler HD-80","valor":2355.00},
-/* ... (mantenha toda a lista de peças que você já tem; cortei aqui só para enxugar, mas pode colar a lista completa) ... */
 {"codigo":"CS124","descricao":"Conj Botao Emergencia c/ Bloco Cont e Colar Prot","valor":464.06}
 ];
 
