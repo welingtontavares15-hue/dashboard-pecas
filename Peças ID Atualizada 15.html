@@ -1,58 +1,56 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Solicitação de Peças — Diversey (A Solenis Company)</title>
-
+<title> Solicitação de Peças — Diversey (A Solenis Company)</title>
 <!-- jsPDF + AutoTable (PDF) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
 <!-- XLSX (Excel) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
 <style>
 :root{
-  --bg:#0f172a;--panel:#1e293b;--header:#0b1220;--text:#e5e7eb;--muted:#94a3b8;--accent:#10b981;
-  --border:#334155;--danger:#ef4444;--shadow:0 6px 24px rgba(0,0,0,.25);
+--bg:#0f172a;--panel:#1e293b;--header:#0b1220;--text:#e5e7eb;--muted:#94a3b8;--accent:#10b981;
+--border:#334155;--danger:#ef4444;--shadow:0 6px 24px rgba(0,0,0,.25);
+--info:#06b6d4;--warn:#f59e0b;--ok:#22c55e;--step:#8b5cf6;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
 header{
-  display:flex;justify-content:space-between;align-items:center;gap:16px;
-  padding:14px 22px;background:var(--header);border-bottom:2px solid var(--accent);
-  position:sticky;top:0;z-index:5
+display:flex;justify-content:space-between;align-items:center;gap:16px;
+padding:14px 22px;background:var(--header);border-bottom:2px solid var(--accent);
+position:sticky;top:0;z-index:5
 }
 .brand{display:flex;flex-direction:column;line-height:1.15}
 .brand .line1{font-weight:800;font-size:22px;color:#fff}
 .brand .line2{font-weight:600;font-size:12px;color:var(--accent);letter-spacing:.4px}
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 button{
-  background:#121a2a;border:1px solid var(--border);color:var(--text);
-  border-radius:10px;padding:8px 12px;cursor:pointer;transition:.2s
+background:#121a2a;border:1px solid var(--border);color:var(--text);
+border-radius:10px;padding:8px 12px;cursor:pointer;transition:.2s
 }
 button:hover{background:var(--accent);color:#06121a;border-color:var(--accent)}
 .btn-primary{background:var(--accent);color:#062015;border-color:transparent}
 .btn-danger{background:var(--danger);border:none;color:#fff}
 .ghost{background:#0f172a}
-main{max-width:min(1280px,92vw);margin:28px auto;padding:0 18px}
+main{max-width:min(1280px,92vw);margin:28px auto;padding:0 18px} #tabela-hist th, #tabela-hist td{font-size:12px;}
 .card{
-  background:var(--panel);border:1px solid var(--border);border-radius:14px;
-  padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)
+background:var(--panel);border:1px solid var(--border);border-radius:14px;
+padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)
 }
 h2{margin:0 0 12px 0;font-size:18px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
-label{font-size:13px;color:var(--muted);display:block}
+label{font-size:13px;color:var(--muted)}
 input,select,textarea{
-  width:100%;margin-top:6px;padding:9px 10px;border-radius:10px;
-  background:#0f172a;border:1px solid var(--border);color:var(--text)
+width:100%;margin-top:6px;padding:9px 10px;border-radius:10px;
+background:#0f172a;border:1px solid var(--border);color:var(--text)
 }
 input[readonly]{opacity:.9}
 table{width:100%;border-collapse:collapse}
-th,td{border:1px solid var(--border);padding:8px 6px;text-align:left;vertical-align:middle}
+th,td{border:1px solid var(--border);padding:10px 8px;text-align:left;vertical-align:middle}
 th{background:#0f172a;color:#10b981;position:sticky;top:72px;z-index:2}
 tr:nth-child(even){background:#1f2e44}
 tr:hover{background:#263956}
@@ -61,215 +59,371 @@ tr:hover{background:#263956}
 .totais{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .totais input{width:130px;text-align:right}
 .small{font-size:12px;color:var(--muted);margin-top:8px}
-.badge{
-  border:1px solid var(--border);border-radius:999px;padding:4px 10px;
-  color:var(--muted);font-size:12px;background:rgba(255,255,255,.04);margin-left:8px
-}
-.toast{
-  position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
-  background:var(--panel);border:1px solid var(--border);padding:10px 14px;
-  border-radius:12px;box-shadow:var(--shadow);display:none;z-index:99
-}
+.badge{border:1px solid var(--border);border-radius:999px;padding:4px 10px;color:var(--muted);font-size:12px;background:rgba(255,255,255,.04);margin-left:8px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:60}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);max-width:900px;width:96%;padding:16px}
+.modal h3{margin:0 0 10px 0}
+.modal .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:800px){.modal .grid2{grid-template-columns:1fr}}
+.toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);display:none;z-index:99}
 .toast.show{display:block}
+select.status{width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px}
+.flow-sup{background:var(--warn)} .flow-forn{background:var(--info)} .flow-rota{background:var(--step)} .flow-ent{background:var(--ok)}
+.toolbar .sep{width:1px;height:24px;background:var(--border);margin:0 6px}
+/* ======= HISTÓRICO — filtros e layout ======= */
 .hist-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hist-filtros{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.hist-filtros input,.hist-filtros select{max-width:220px}
+#tabela-hist td:last-child{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#tabela-hist th:first-child, #tabela-hist td:first-child{position:sticky;left:0;background:#0f172a;z-index:3}
+.hist-empty{color:var(--muted);padding:8px 0}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid var(--border);background:rgba(255,255,255,.04)}
 .count{color:var(--muted);font-size:12px}
-select.status{
-  width:auto;min-width:160px;border:none;color:#fff;font-weight:600;border-radius:8px;padding:6px 8px
+/* ======= Scrollbars customizados (WebKit e Firefox) ======= */
+@media (pointer: fine) {
+:root { --scrollbar-thumb: var(--border); --scrollbar-thumb-hover: var(--accent); }
+body, main, .modal, .card, #hist-content, #tabela-hist, #tbl-itens { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
 }
-.flow-sup{background:#f59e0b}
-.flow-forn{background:#06b6d4}
-.flow-rota{background:#8b5cf6}
-.flow-ent{background:#22c55e}
-#tabela-hist th, #tabela-hist td{font-size:12px}
-#tabela-hist td:last-child{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+/* ======= Feedback visual campos inválidos ======= */
+.invalid { border-color: var(--danger) !important; box-shadow: 0 0 0 2px rgba(239,68,68,.25); }
 </style>
 </head>
 <body>
 <header>
-  <div style="display:flex;align-items:center;gap:10px">
-    <div class="brand">
-      <span class="line1">Diversey</span>
-      <span class="line2">A Solenis Company</span>
-    </div>
-    <span id="badge-api" class="badge">WebApp: não configurado</span>
-  </div>
-  <div class="toolbar">
-    <button id="btn-config-api" class="ghost">Configurar WebApp</button>
-    <button id="btn-excel" class="ghost">Excel</button>
-    <button id="btn-pdf" class="ghost">PDF</button>
-    <button id="btn-enviar" class="btn-primary">Enviar</button>
-    <button id="btn-limpar" class="ghost">Limpar</button>
-  </div>
+<div style="display:flex;align-items:center;gap:10px">
+<div class="brand">
+<span class="line1">Diversey</span>
+<span class="line2">A Solenis Company</span>
+</div>
+<span id="badge-modo" class="badge">Modo: GLOBAL</span>
+<span id="badge-od" class="badge" title="Status OneDrive">OneDrive: não configurado</span>
+</div>
+<div class="toolbar">
+<button id="btn-modo-local"> Local</button>
+<button id="btn-modo-global"> Global</button>
+<span class="sep"></span>
+<button id="btn-onedrive-config" class="ghost"> OneDrive</button>
+<button id="btn-global-sync" class="ghost"> Sincronizar</button>
+<span id="badge-sync" class="badge" title="Próxima atualização automática">Auto-sync: 10 min</span>
+<span class="sep"></span>
+<button id="btn-xlsx"> Excel</button>
+<button id="btn-pdf"> PDF</button>
+<button id="btn-enviar" class="btn-primary"> Enviar</button>
+<button id="btn-clear" class="ghost"> Limpar</button>
+</div>
 </header>
-
 <main>
-  <!-- DADOS -->
-  <section class="card">
-    <h2>Dados da Solicitação</h2>
-    <div class="grid">
-      <div>
-        <label>Nº Solicitação
-          <input id="req-num" readonly>
-        </label>
-        <label>Técnico
-          <input id="tecnico" list="tecnicos" placeholder="Selecione o técnico">
-          <datalist id="tecnicos"></datalist>
-        </label>
-        <label>Endereço
-          <input id="endereco" readonly>
-        </label>
-        <label>Cidade / UF
-          <input id="cidadeuf" readonly>
-        </label>
-      </div>
-      <div>
-        <label>Data
-          <input id="data" type="date">
-        </label>
-        <label>Tipo de Envio
-          <select id="envio">
-            <option value="Normal" selected>Normal</option>
-            <option value="Sedex">Sedex</option>
-            <option value="Urgente">Urgente</option>
-          </select>
-        </label>
-        <label>CEP
-          <input id="cep" readonly>
-        </label>
-        <label>Observações
-          <textarea id="obs" rows="2" placeholder="Observações adicionais..."></textarea>
-        </label>
-      </div>
-    </div>
-    <div class="small">Formulário local, integrado ao Apps Script (planilha apenas como banco de dados).</div>
-  </section>
-
-  <!-- ITENS -->
-  <section class="card">
-    <h2>Itens da Solicitação</h2>
-    <datalist id="pecas"></datalist>
-    <table id="tbl-itens">
-      <thead>
-        <tr>
-          <th style="width:110px">Código</th>
-          <th style="width:200px">ID Máquina</th>
-          <th style="width:70px">Qtd</th>
-          <th>Descrição</th>
-          <th style="width:130px" class="right">Valor Unit.</th>
-          <th style="width:140px" class="right">Subtotal</th>
-          <th style="width:140px">Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <div class="actions-row">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="btn-add" class="btn-primary">Adicionar Item</button>
-        <button id="btn-add-blank" class="ghost">Linha em branco</button>
-      </div>
-      <div class="totais">
-        <span id="itens-count" class="badge">0 itens</span>
-        <span>Subtotal:</span> <strong id="subtotal">R$ 0,00</strong>
-        <span>Desconto (R$):</span> <input id="desc-valor" type="number" step="0.01" value="0">
-        <span>Frete (R$):</span> <input id="frete" type="number" step="0.01" value="0">
-        <span>Total:</span> <strong id="total-geral">R$ 0,00</strong>
-      </div>
-    </div>
-  </section>
-
-  <!-- HISTÓRICO -->
-  <section class="card">
-    <div class="hist-header">
-      <h2 style="margin:0">Histórico <span class="count" id="hist-count"></span></h2>
-      <div class="toolbar">
-        <button id="btn-hist-atualizar" class="ghost">Atualizar</button>
-        <button id="btn-hist-excluir" class="btn-danger">Excluir selecionados</button>
-      </div>
-    </div>
-    <table id="tabela-hist">
-      <thead>
-        <tr>
-          <th style="width:36px;text-align:center"><input id="hist-select-all" type="checkbox"></th>
-          <th>Nº</th>
-          <th>Data</th>
-          <th>Técnico</th>
-          <th>Itens</th>
-          <th>Total</th>
-          <th>Fluxo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+<section class="card">
+<h2> Dados da Solicitação</h2>
+<div class="grid">
+<div>
+<label>Nº Solicitação
+<input id="req-num" readonly>
+</label>
+<label>Técnico
+<input id="tecnico" list="tecnicos" placeholder="Selecione o técnico">
+<datalist id="tecnicos"></datalist>
+</label>
+<label>Endereço
+<input id="endereco" readonly>
+</label>
+<label>Cidade / UF
+<input id="cidadeuf" readonly>
+</label>
+</div>
+<div>
+<label>Data
+<input id="data" type="date">
+</label>
+<label>Tipo de Envio
+<select id="envio">
+<option value="Normal" selected>Normal</option>
+<option value="Sedex">Sedex</option>
+<option value="Urgente">Urgente</option>
+</select>
+</label>
+<label>CEP
+<input id="cep" readonly>
+</label>
+<label>Observações
+<textarea id="obs" rows="2" placeholder="Observações adicionais..."></textarea>
+</label>
+</div>
+</div>
+<div class="small">Atalhos: Ctrl + Enter adiciona item • Ctrl + E envia • Ctrl + P PDF</div>
+</section>
+<section class="card">
+<h2> Itens da Solicitação</h2>
+<datalist id="pecas"></datalist>
+<table id="tbl-itens">
+<thead>
+<tr>
+<th style="width:110px">Código</th>
+<th style="width:200px">ID Máquina</th>
+<th style="width:70px">Qtd</th>
+<th>Descrição</th>
+<th style="width:130px" class="right">Valor Unit.</th>
+<th style="width:140px" class="right">Subtotal</th>
+<th style="width:140px">Ações</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<div class="actions-row">
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button id="btn-add" class="btn-primary"> Adicionar Item</button>
+<button id="btn-add-blank" class="ghost" title="Linha em branco"> Linha em branco</button>
+<button id="btn-merge" class="ghost" title="Mesclar itens iguais"> Mesclar itens iguais</button>
+</div>
+<div class="totais">
+<span id="itens-count" class="pill">0 itens</span>
+<span>Subtotal:</span> <strong id="subtotal">R$ 0,00</strong>
+<span>Desconto (R$):</span> <input id="desc-valor" type="number" step="0.01" value="0">
+<span>Frete (R$):</span> <input id="frete" type="number" step="0.01" value="0">
+<span>Total:</span> <strong id="total-geral">R$ 0,00</strong>
+</div>
+</div>
+</section>
+<section class="card" id="hist">
+<div class="hist-header">
+<h2 style="margin:0"> Histórico <span class="count" id="hist-count"></span></h2>
+<div class="toolbar">
+<button id="btn-hist-mostrar" class="ghost"> Mostrar</button>
+<button id="btn-hist-ocultar" class="ghost"> Ocultar</button>
+<button id="btn-hist" class="btn-primary">Atualizar</button>
+<span class="sep"></span>
+<select id="bulk-status" title="Aplicar status aos selecionados" style="min-width:200px">
+<option value="">Status em lote...</option>
+<option>Supervisor Diversey</option>
+<option>Fornecedor</option>
+<option>Rota de Entrega</option>
+<option>Entregue</option>
+</select>
+<button id="bulk-apply" class="ghost">Aplicar</button>
+<span class="sep"></span>
+<button id="hist-export-xlsx" class="ghost" title="Exportar histórico (Excel)"> Exportar</button>
+<button id="hist-export" class="ghost" title="Exportar histórico (JSON)"> Exportar JSON</button>
+<button id="hist-import" class="ghost" title="Importar histórico (JSON)"> Importar JSON</button>
+<input id="hist-import-file" type="file" accept="application/json" style="display:none">
+<span class="sep"></span>
+<button id="hist-del" class="btn-danger"> Excluir selecionados</button>
+</div>
+</div>
+<!-- FILTROS DO HISTÓRICO -->
+<div class="hist-filtros" id="hist-filtros">
+<input id="f-num" placeholder="Filtrar por Nº" />
+<select id="f-mes" title="Mês" style="min-width:120px">
+<option value="">Mês (todos)</option>
+<option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option><option value="4">Abr</option>
+<option value="5">Mai</option><option value="6">Jun</option><option value="7">Jul</option><option value="8">Ago</option>
+<option value="9">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+</select>
+<select id="f-ano" title="Ano" style="min-width:110px">
+<option value="">Ano (todos)</option>
+</select>
+<input id="f-tec" placeholder="Técnico" />
+<select id="f-status" title="Fluxo">
+<option value="">Fluxo (todos)</option>
+<option>Supervisor Diversey</option>
+<option>Fornecedor</option>
+<option>Rota de Entrega</option>
+<option>Entregue</option>
+</select>
+<button id="f-limpar" class="ghost">Limpar</button>
+</div>
+<div id="hist-content">
+<div id="hist-empty" class="hist-empty" style="display:none">Sem registros.</div>
+<table id="tabela-hist">
+<thead>
+<tr>
+<th style="width:36px; text-align:center"><input id="hist-select-all" type="checkbox" title="Selecionar todos"></th>
+<th>Nº</th>
+<th>Data</th>
+<th>Técnico</th>
+<th>Itens</th>
+<th>Total</th>
+<th>Fluxo</th>
+<th>Ações</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</section>
 </main>
-
+<!-- Modal Configuração OneDrive -->
+<div id="modal-onedrive" class="modal-backdrop">
+<div class="modal">
+<h3> Configurar OneDrive compartilhado</h3>
+<p class="small">
+Cole o <strong>link do arquivo</strong> <code>pedidos.json</code> (ou um <code>shareId</code> iniciando com <code>u!</code>/<code>s!</code>)
+e o <strong>token (Bearer)</strong> do Microsoft Graph (Files.ReadWrite).
+</p>
+<div class="grid2">
+<label>Link do arquivo / shareId
+<input id="onedrive-share" placeholder="https://.../pedidos.json (ou u!abc...)">
+</label>
+<label>Token de acesso (Bearer)
+<textarea id="onedrive-token" rows="4" placeholder="eyJ0eXAiOiJKV1QiLCJhbGciOi..."></textarea>
+</label>
+<label>Atualização automática (min)
+<input id="onedrive-refresh-min" type="number" min="1" step="1" value="10">
+</label>
+<label>Nome do arquivo
+<input id="onedrive-arquivo" value="pedidos.json">
+</label>
+</div>
+<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+<button id="onedrive-cancelar">Cancelar</button>
+<button id="onedrive-testar" class="ghost">Testar conexão</button>
+<button id="onedrive-salvar" class="btn-primary">Salvar configuração</button>
+</div>
+</div>
+</div>
 <div id="toast" class="toast"></div>
-
 <script>
 'use strict';
-
-/* ======== UTILS ======== */
+/* ========= Helpers ========= */
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const BRL = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-
-function showToast(msg, ms=2500){
-  const t = $('#toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), ms);
-}
-
-/* ======== CONFIG WEBAPP ======== */
-let API_URL = '';
-
-function carregarApiUrl(){
-  API_URL = localStorage.getItem('webappUrl') || '';
-  if(!API_URL){
-    const u = prompt('Informe a URL do WebApp (termina com /exec)');
-    if(u){
-      API_URL = u.trim();
-      localStorage.setItem('webappUrl', API_URL);
-    }
-  }
-  atualizarBadgeApi();
-}
-
-function atualizarBadgeApi(){
-  const b = $('#badge-api');
-  if(!API_URL){
-    b.textContent = 'WebApp: não configurado';
-  }else{
-    b.textContent = 'WebApp: configurado';
-  }
-}
-
-async function api(rota, payload){
-  if(!API_URL){
-    showToast('Configure a URL do WebApp primeiro.');
-    throw new Error('WebApp não configurado');
-  }
-  const resp = await fetch(API_URL, {
-    method:'POST',
-    headers: {"Content-Type": "application/json"}, // CORREÇÃO AQUI
-    body:JSON.stringify(Object.assign({rota}, payload || {}))
-  });
-  let data;
-  try{
-    data = await resp.json();
-  }catch(e){
-    showToast('Resposta inválida do servidor.');
-    throw e;
-  }
-  if(!data.ok){
-    showToast(data.msg || 'Erro no servidor.');
-    throw new Error(data.msg || 'Erro');
-  }
-  return data;
-}
-
-/* ======== BASE DE DADOS LOCAL (TÉCNICOS E PEÇAS) ======== */
+const toast = (m,ms=2200)=>{ const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),ms); };
+const clamp = (v,min,max)=>Math.min(max,Math.max(min,Number(v||0)));
+const collator = new Intl.Collator('pt-BR',{sensitivity:'base'});
+const fmtData = s => s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s.slice(8,10)}/${s.slice(5,7)}/${s.slice(0,4)}` : s;
+const fmtCEP = s => (s||'').replace(/\D/g,'').replace(/(\d{5})(\d{3}).*/, '$1-$2');
+const visible = (el)=>!el || el.style.display!== 'none';
+/* ========= Bases ========= */
+const itensBase = [
+{"codigo":"CS001","descricao":"Adaptador Braço Lavagem HD-80","valor":225.00},
+{"codigo":"CS002","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-50","valor":175.70},
+{"codigo":"CS003","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-80","valor":205.00},
+{"codigo":"CS004","descricao":"Adaptador Interno HD-80","valor":350.00},
+{"codigo":"CS005","descricao":"Arruela De Rotação HD-80","valor":40.00},
+{"codigo":"CS006","descricao":"Assento Do Braço De Lavagem (Bucha) HD-50","valor":101.00},
+{"codigo":"CS007","descricao":"Batente Lateral HD-80","valor":105.00},
+{"codigo":"CS008","descricao":"Bicos Injetores Do Braço HD-50/HD-80","valor":114.48},
+{"codigo":"CS009","descricao":"Boiler HD-50","valor":2033.00},
+{"codigo":"CS010","descricao":"Boiler HD-80","valor":2355.00},
+{"codigo":"CS011","descricao":"Boma De Enxague (Importada) HD-50","valor":2007.79},
+{"codigo":"CS012","descricao":"Boma De Enxague (Nacional) HD-80","valor":1550.00},
+{"codigo":"CS013","descricao":"Bomba De Lavagem HD-50","valor":7529.22},
+{"codigo":"CS014","descricao":"Bomba De Lavagem HD-80","valor":11293.85},
+{"codigo":"CS015","descricao":"Braço Capo HD-80","valor":1255.00},
+{"codigo":"CS016","descricao":"Braço De Lavagem HD-50","valor":1205.00},
+{"codigo":"CS017","descricao":"Braço De Lavagem Superior Completo HD-80","valor":1715.00},
+{"codigo":"CS018","descricao":"Caixa De Montagem Elétrica HD-80","valor":680.00},
+{"codigo":"CS019","descricao":"Caixa De Montagem HD-50","valor":225.88},
+{"codigo":"CS020","descricao":"Capa Do Filtro De Residuo HD-50","valor":150.60},
+{"codigo":"CS021","descricao":"Capo HD-80","valor":5020.00},
+{"codigo":"CS022","descricao":"Cesto De Resíduo HD-80","valor":150.60},
+{"codigo":"CS023","descricao":"Chicote NR12","valor":3210.00},
+{"codigo":"CS024","descricao":"Conexão Braço HD-80","valor":1507.00},
+{"codigo":"CS025","descricao":"Conj Termostato","valor":886.72},
+{"codigo":"CS026","descricao":"Conjunto de cesto de residuo NT-300","valor":1123.05},
+{"codigo":"CS027","descricao":"Contactora De Comando HD-80","valor":328.00},
+{"codigo":"CS028","descricao":"Contatora HD-50","valor":328.00},
+{"codigo":"CS029","descricao":"Curva Braço Superior HD-50","valor":115.00},
+{"codigo":"CS030","descricao":"Disjuntor 10A HD-80","valor":375.00},
+{"codigo":"CS031","descricao":"Disjuntor 125A","valor":1776.85},
+{"codigo":"CS032","descricao":"Disjuntor 80A","valor":313.20},
+{"codigo":"CS033","descricao":"Eixo De Suporte Do Braço HD-50","valor":301.50},
+{"codigo":"CS034","descricao":"Etiqueta Painel NT","valor":545.90},
+{"codigo":"CS035","descricao":"Filtro De Residuo HD-50","valor":742.00},
+{"codigo":"CS036","descricao":"Filtro De Residuo Hdw-80 HD-80","valor":401.56},
+{"codigo":"CS037","descricao":"Fim de curso HDW-200","valor":789.21},
+{"codigo":"CS038","descricao":"Fim de curso HDW-200 (Completo)","valor":2175.50},
+{"codigo":"CS039","descricao":"Flange Braço Inferior HD-50","valor":742.00},
+{"codigo":"CS040","descricao":"Flange Braço Superior HD-50","valor":742.00},
+{"codigo":"CS041","descricao":"Flauta De Enxague (S/ Bicos) HD-80","valor":125.50},
+{"codigo":"CS042","descricao":"Flauta Do Braço HD-50","valor":125.50},
+{"codigo":"CS043","descricao":"Flauta HD-80","valor":1204.75},
+{"codigo":"CS044","descricao":"Fonte 24V 10A HD-50/HD-80","valor":155.00},
+{"codigo":"CS045","descricao":"Kit Mangueiras (Agua + Dreno) HD-50/HD-80","valor":240.00},
+{"codigo":"CS046","descricao":"Luva Braço Superior HD-50","valor":90.00},
+{"codigo":"CS047","descricao":"Mangueira De Borracha HD-80","valor":95.00},
+{"codigo":"CS048","descricao":"Mola Da Porta HD-50","valor":75.00},
+{"codigo":"CS049","descricao":"Mola Do Capo HD-80","valor":830.00},
+{"codigo":"CS050","descricao":"Painel Elétrico Completo HD-50","valor":9550.00},
+{"codigo":"CS051","descricao":"Painel Ihm HD-50/HD-80","valor":1588.00},
+{"codigo":"CS052","descricao":"Parafuso Da Rondana HD-50","valor":75.29},
+{"codigo":"CS053","descricao":"Parafuso De Fixação Braço De Lavagem HD-80","valor":105.00},
+{"codigo":"CS054","descricao":"Parafuso De Fixação Da Polia HD-80","valor":145.00},
+{"codigo":"CS055","descricao":"Pino Batente Lateral Capo HD-80","valor":130.00},
+{"codigo":"CS056","descricao":"Placa Controladora HD-50/HD-80","valor":6307.00},
+{"codigo":"CS057","descricao":"Placa De Montagem HD-50","valor":280.00},
+{"codigo":"CS058","descricao":"Polia De Movimentação Do Capo HD-80","valor":135.00},
+{"codigo":"CS059","descricao":"Polia Inferior Do Capo HD-80","valor":150.00},
+{"codigo":"CS060","descricao":"Porta HD-50","valor":1760.00},
+{"codigo":"CS061","descricao":"Pressostato De Nível HD-50","valor":610.00},
+{"codigo":"CS062","descricao":"Pressostato HDW-200","valor":453.68},
+{"codigo":"CS063","descricao":"Pressotato De Nível HD-80","valor":572.40},
+{"codigo":"CS064","descricao":"Pulmão HD-80","valor":500.00},
+{"codigo":"CS065","descricao":"Relé De Proteção HD-50/HD-80","valor":414.11},
+{"codigo":"CS067","descricao":"Resistencia do booster HDW-200","valor":1696.00},
+{"codigo":"CS068","descricao":"Resistencia Do Tanque Com Flange Hd50","valor":1017.60},
+{"codigo":"CS069","descricao":"Resistencia Do Tanque Com Flange Hd80","valor":1023.00},
+{"codigo":"CS070","descricao":"Resistencia do TQ HDW-200","valor":1346.73},
+{"codigo":"CS071","descricao":"Resistencia NT-300","valor":1696.00},
+{"codigo":"CS072","descricao":"Resistências Boiler Com Flange Hd50","valor":1272.00},
+{"codigo":"CS073","descricao":"Resistências Boiler Com Flange Hd80","valor":1484.00},
+{"codigo":"CS074","descricao":"Roldana HD-80","valor":163.50},
+{"codigo":"CS075","descricao":"Rondana Da Porta HD-50","valor":75.00},
+{"codigo":"CS076","descricao":"Saida Do Dreno HD-50","valor":476.85},
+{"codigo":"CS077","descricao":"Sensor Capo HD-80","valor":108.45},
+{"codigo":"CS078","descricao":"Sensor De Nivel HD-50","valor":606.74},
+{"codigo":"CS079","descricao":"Sensor De Nível HD-80","valor":606.74},
+{"codigo":"CS080","descricao":"Sensor De Temperatura HD-50","valor":255.00},
+{"codigo":"CS081","descricao":"Solenoide De Agua HD-50","valor":175.00},
+{"codigo":"CS082","descricao":"Sonda Temperatura","valor":320.51},
+{"codigo":"CS083","descricao":"Suporte Bomba De Lavagem HD-80","valor":75.00},
+{"codigo":"CS084","descricao":"Suporte Braço Capo HD-80","valor":40.00},
+{"codigo":"CS085","descricao":"Suporte Capo HD-80","valor":150.00},
+{"codigo":"CS086","descricao":"Suporte Do Boiler HD-80","valor":225.00},
+{"codigo":"CS087","descricao":"Suporte Do Rack HD-80","valor":1255.00},
+{"codigo":"CS088","descricao":"Suporte Fixação HD-80","valor":155.00},
+{"codigo":"CS089","descricao":"Suporte Gancho Bomba De Lavagem HD-80","valor":350.00},
+{"codigo":"CS090","descricao":"Suporte Luva Para Mangeira Do Dreno HD-80","valor":276.00},
+{"codigo":"CS091","descricao":"Suporte Painel HD-80","valor":405.00},
+{"codigo":"CS092","descricao":"Suporte Regulável De Altura(Pé) HD-80","valor":335.00},
+{"codigo":"CS093","descricao":"Suporte Termostato Do Boiler HD-80","valor":51.00},
+{"codigo":"CS094","descricao":"Tampa Frontal HD-50","valor":602.34},
+{"codigo":"CS095","descricao":"Tampa Frontal HD-80","valor":230.00},
+{"codigo":"CS096","descricao":"Tampa Inferior HD-50","valor":502.00},
+{"codigo":"CS097","descricao":"Tampa Inferior Traseira HD-50","valor":955.00},
+{"codigo":"CS098","descricao":"Tampa Lateral Direita HD-50","valor":905.00},
+{"codigo":"CS099","descricao":"Tampa Lateral HD-80","valor":705.00},
+{"codigo":"CS100","descricao":"Tampa Superior HD-50","valor":1130.00},
+{"codigo":"CS101","descricao":"Tampa Superior HD-80","valor":205.00},
+{"codigo":"CS102","descricao":"Tampa Traseira HD-50","valor":1005.00},
+{"codigo":"CS103","descricao":"Tampa Traseira HD-80","valor":715.00},
+{"codigo":"CS104","descricao":"Tampao Do Dreno HD-50","valor":119.06},
+{"codigo":"CS105","descricao":"Tampão Do Dreno HD-80","valor":183.60},
+{"codigo":"CS106","descricao":"Tela De Filtro De Resíduo Direito HD-80","valor":337.61},
+{"codigo":"CS107","descricao":"Tela De Filtro De Resíduo Esquerdo HD-80","valor":337.61},
+{"codigo":"CS108","descricao":"Terminal De Aterramento HD-50","valor":55.50},
+{"codigo":"CS109","descricao":"Termostato Do Boiler HD-50/H80","valor":901.00},
+{"codigo":"CS110","descricao":"Termostato Do Tanque HD/HD-80","valor":254.40},
+{"codigo":"CS111","descricao":"Trilho Dim HD-50/HD-80","valor":40.00},
+{"codigo":"CS112","descricao":"Tubo Braço Lavagem Superior HD-80","valor":1635.00},
+{"codigo":"CS113","descricao":"Tubo Da Bomba De Lavagem (Mangote Curvo) HD-80","valor":350.00},
+{"codigo":"CS114","descricao":"Tubo De Drenagem Hdw-80 HD-80","valor":355.00},
+{"codigo":"CS115","descricao":"Tubo De Saida Da Bomba De Lavagem HD-50","valor":225.88},
+{"codigo":"CS116","descricao":"Tubo Saida Bomba De Lavagem HD-80","valor":263.55},
+{"codigo":"CS117","descricao":"Tupo Braço Superior HD-50","valor":52.00},
+{"codigo":"CS118","descricao":"Valvula De Agua HD-80","valor":159.00},
+{"codigo":"CS119","descricao":"Valvula Solenoide HDW-200 NT","valor":172.50},
+{"codigo":"CS120","descricao":"Etiqueta Painel","valor":69.00},
+{"codigo":"CS121","descricao":"Contator 9A AC3 220v 1NA","valor":393.92},
+{"codigo":"CS122","descricao":"Contator 38A AC3 220v 1NA/1NF","valor":712.23},
+{"codigo":"CS123","descricao":"Conj Botao L/D Duplo C/ Sinaliz 220v - BL Contat e Capa M","valor":515.27},
+{"codigo":"CS124","descricao":"Conj Botao Emergencia c/ Bloco Cont e Colar Prot","valor":464.06}
+];
 const tecnicosBase = {
 "Antonio Ferreira De Santana Filho": {"endereco": "Av Curió - Campanário, Ap 510 Bloco B", "bairro": "", "cep": "09.925-000", "municipio": "Diadema", "uf": "SP"},
 "Antonio Rocker": {"endereco": "Rua Estoril 131", "bairro": "Veleiros", "cep": "47.730-900", "municipio": "São Paulo", "uf": "SP"},
@@ -297,543 +451,844 @@ const tecnicosBase = {
 "Welington Bastos Tavares": {"endereco": "AV Morumbi Qd 34 Lt 11", "bairro": "Vila Mariana", "cep": "75.134-550", "municipio": "Anápolis", "uf": "GO"},
 "Werverton Santos": {"endereco": "Rua Constância da Conceição 04", "bairro": "Vila Jaguari", "cep": "05126-2090", "municipio": "São Paulo", "uf": "SP"}
 };
-
-const itensBase = [
-{"codigo":"CS001","descricao":"Adaptador Braço Lavagem HD-80","valor":225.00},
-{"codigo":"CS002","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-50","valor":175.70},
-{"codigo":"CS003","descricao":"Adaptador Do Braço De Lavagem (Tarugo) HD-80","valor":205.00},
-{"codigo":"CS004","descricao":"Adaptador Interno HD-80","valor":350.00},
-{"codigo":"CS005","descricao":"Arruela De Rotação HD-80","valor":40.00},
-{"codigo":"CS006","descricao":"Assento Do Braço De Lavagem (Bucha) HD-50","valor":101.00},
-{"codigo":"CS007","descricao":"Batente Lateral HD-80","valor":105.00},
-{"codigo":"CS008","descricao":"Bicos Injetores Do Braço HD-50/HD-80","valor":114.48},
-{"codigo":"CS009","descricao":"Boiler HD-50","valor":2033.00},
-{"codigo":"CS010","descricao":"Boiler HD-80","valor":2355.00},
-{"codigo":"CS124","descricao":"Conj Botao Emergencia c/ Bloco Cont e Colar Prot","valor":464.06}
-];
-
-/* ======== DATALISTS ======== */
-function preencherTecnicos(){
-  const dl = $('#tecnicos');
-  dl.innerHTML = '';
-  Object.keys(tecnicosBase).sort().forEach(nome=>{
-    const opt = document.createElement('option');
-    opt.value = nome;
-    dl.appendChild(opt);
-  });
+/* ========= Config ========= */
+const LS = { ORD:'sp_orders_v3', CUR:'sp_current_v3', SEQ:'sp_seq_v1', MODO:'sp_modo_integracao', ONEDRIVE:'sp_onedrive_cfg_v1' };
+const GLOBAL_REFRESH_MIN_DEFAULT = 10;
+const DEFAULT_ONEDRIVE = { shareUrl:'', accessToken:'', refreshMinutes:GLOBAL_REFRESH_MIN_DEFAULT, fileName:'pedidos.json' };
+const getModo = () => localStorage.getItem(LS.MODO) || 'global';
+const setModo = (m) => {
+localStorage.setItem(LS.MODO, m);
+$('#badge-modo').textContent = 'Modo: ' + m.toUpperCase();
+gerarNumero();
+if (m === 'global') {
+updateODStatus();
+if (!isOneDriveReady()) {
+toast(' OneDrive não configurado/conectado. Clique em " OneDrive" para configurar.');
 }
-
-function preencherPecas(){
-  const dl = $('#pecas');
-  dl.innerHTML = '';
-  itensBase.forEach(p=>{
-    const opt = document.createElement('option');
-    opt.value = p.codigo;
-    opt.label = `${p.codigo} — ${p.descricao} — ${BRL(p.valor)}`;
-    dl.appendChild(opt);
-  });
+montarHistoricoGlobal({ refresh: true });
+} else {
+montarHistoricoLocal();
+updateODStatus();
 }
-
+};
+/* ========= OneDrive Sync ========= */
+const OneDriveStore = (()=>{
+function parseStored(){
+try { return { ...DEFAULT_ONEDRIVE, ...JSON.parse(localStorage.getItem(LS.ONEDRIVE) || '{}') }; }
+catch(e){ return { ...DEFAULT_ONEDRIVE }; }
+}
+function sanitizeMinutes(v){ const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? n : GLOBAL_REFRESH_MIN_DEFAULT; }
+function normalize(cfg={}){ const merged = { ...DEFAULT_ONEDRIVE, ...cfg }; merged.shareUrl=(merged.shareUrl||'').trim(); merged.accessToken=(merged.accessToken||'').trim(); merged.refreshMinutes=sanitizeMinutes(merged.refreshMinutes); if(!merged.fileName) merged.fileName='pedidos.json'; return merged; }
+function getConfig(){ return normalize(parseStored()); }
+function setConfig(newCfg={}){ const normalized = normalize({ ...parseStored(), ...newCfg }); localStorage.setItem(LS.ONEDRIVE, JSON.stringify(normalized)); return normalized; }
+function stripParams(u){ return String(u||'').split('#')[0].split('?')[0]; }
+const isShareId = s => /^(u|s)![A-Za-z0-9_-]+$/.test(String(s||''));
+function toShareToken(raw){
+const v=(raw||'').trim(); if(!v) throw new Error('Informe o link/ID de compartilhamento do OneDrive.');
+if(isShareId(v)) return v;
+if(/^https?:/i.test(v)){ const url=stripParams(v); const b64=btoa(url).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); return 'u!'+b64; }
+const b64=btoa(v).replace(/=+$/,'').replace(/\+/g,'-').replace(/\//g,'_'); return 'u!'+b64;
+}
+function contentUrl(cfg){ return `https://graph.microsoft.com/v1.0/shares/${toShareToken(cfg.shareUrl)}/driveItem/content`; }
+async function loadWith(cfg){
+const c=normalize(cfg);
+if(!c.shareUrl) throw new Error('Informe o link/ID compartilhado do arquivo JSON no OneDrive.');
+if(!c.accessToken) throw new Error('Cole o token (Bearer) do Microsoft Graph.');
+const res=await fetch(contentUrl(c),{headers:{'Authorization':`Bearer ${c.accessToken}`,'Accept':'application/json'}});
+if(res.status===401) throw new Error('Token inválido ou expirado (401).');
+if(res.status===403) throw new Error('Sem permissão (403).');
+if(res.status===404){ return { orders:[], etag:res.headers.get('ETag')||res.headers.get('etag')||null }; }
+if(!res.ok){ const msg=await res.text().catch(()=>'' ); throw new Error(`Erro ao ler arquivo (${res.status}): ${msg.slice(0,200)}`); }
+const etag=res.headers.get('ETag')||res.headers.get('etag')||null;
+const text=await res.text(); const trimmed=(text||'').trim(); let lista=[];
+if(trimmed){
+try{ const parsed=JSON.parse(trimmed); if(Array.isArray(parsed)) lista=parsed; else if(Array.isArray(parsed.orders)) lista=parsed.orders; else throw new Error('Formato JSON inválido (esperado array ou {orders:[...]})'); }
+catch(e){ throw new Error('Conteúdo JSON inválido no arquivo do OneDrive.'); }
+}
+return { orders:lista, etag };
+}
+async function saveWith(cfg, orders, etag){
+const c=normalize(cfg);
+if(!c.shareUrl||!c.accessToken) throw new Error('Config incompleta (link e token).');
+const res=await fetch(contentUrl(c),{method:'PUT',headers:{'Authorization':`Bearer ${c.accessToken}`,'Content-Type':'application/json','If-Match':etag||'*'},body:JSON.stringify(orders,null,2)});
+if(res.status===401) throw new Error('Token inválido ou expirado (401).');
+if(res.status===403) throw new Error('Sem permissão (403).');
+if(res.status===412) throw new Error('Conflito (412): alguém alterou o arquivo. Clique em “Sincronizar” e tente novamente.');
+if(!res.ok){ const msg=await res.text().catch(()=>'' ); throw new Error(`Erro ao salvar (${res.status}): ${msg.slice(0,200)}`); }
+return { etag:res.headers.get('ETag')||res.headers.get('etag')||null };
+}
+async function testConfig(cfg){ return loadWith(cfg); }
+return { getConfig, setConfig, loadWith, saveWith, testConfig };
+})();
+/* ========= Estado Global ========= */
+const GLOBAL_CACHE = { orders:[], etag:null, loaded:false, loading:null, lastSync:0 };
+function normalizePedido(raw={}){
+const itens = Array.isArray(raw.itens)
+? raw.itens.map(it=>({codigo:(it.codigo||'').toString().trim().toUpperCase(),descricao:it.descricao||'',idMaquina:(it.idMaquina||it.id||'').toString(),qtd:Number(it.qtd||0)||0,valor:Number(it.valor||0)||0,subtotal:Number(it.subtotal||((Number(it.qtd||0)||0)*(Number(it.valor||0)||0)))||0}))
+: [];
+return { numero:(raw.numero||'').toString(), data:raw.data || new Date().toISOString().slice(0,10), tecnico:raw.tecnico || '', endereco:raw.endereco || '', municipio:raw.municipio || '', uf:raw.uf || '', cep:raw.cep || '', envio:raw.envio || 'Normal', obs:raw.obs || '', subtotal:Number(raw.subtotal||0)||0, total:Number(raw.total||0)||0, descValor:Number(raw.descValor||0)||0, frete:Number(raw.frete||0)||0, fluxo:raw.fluxo || 'Supervisor Diversey', itens };
+}
+function setGlobalState(lista, etag){ GLOBAL_CACHE.orders=(lista||[]).map(normalizePedido); GLOBAL_CACHE.etag=etag||null; GLOBAL_CACHE.loaded=true; GLOBAL_CACHE.lastSync=Date.now(); updateSyncBadge(); }
+async function ensureGlobalCache(force=false){
+if(GLOBAL_CACHE.loading){ try{ await GLOBAL_CACHE.loading; }catch(_){ } if(!force) return GLOBAL_CACHE; }
+const cfg=OneDriveStore.getConfig(); const refreshMs=Math.max(1, Number(cfg.refreshMinutes||GLOBAL_REFRESH_MIN_DEFAULT))*60000;
+if(!force && GLOBAL_CACHE.loaded && (Date.now()-GLOBAL_CACHE.lastSync)<refreshMs){ return GLOBAL_CACHE; }
+const promise=OneDriveStore.loadWith(cfg).then(({orders,etag})=>{ setGlobalState(orders,etag); return GLOBAL_CACHE; });
+GLOBAL_CACHE.loading=promise; try{ await promise; } finally { GLOBAL_CACHE.loading=null; } return GLOBAL_CACHE;
+}
+async function salvarListaGlobal(lista){
+const cfg=OneDriveStore.getConfig();
+const atual=(lista||[]).map(normalizePedido);
+const { etag } = await OneDriveStore.saveWith(cfg, atual, GLOBAL_CACHE.etag);
+setGlobalState(atual, etag); return atual;
+}
+/* ========= Datalists ========= */
+function preencherListas(){
+const dlT=$('#tecnicos'); dlT.innerHTML='';
+Object.keys(tecnicosBase).sort(collator.compare).forEach(n=>{ const o=document.createElement('option'); o.value=n; dlT.appendChild(o); });
+const dlP=$('#pecas'); dlP.innerHTML='';
+itensBase.forEach(p=>{ const o=document.createElement('option'); o.value=p.codigo; o.label=`${p.codigo} — ${p.descricao} — ${BRL(p.valor)}`; dlP.appendChild(o); });
+}
 function preencherEndereco(nome){
-  const d = tecnicosBase[nome];
-  if(!d) return;
-  $('#endereco').value = d.endereco + (d.bairro ? ', ' + d.bairro : '');
-  $('#cidadeuf').value = d.municipio + ' / ' + d.uf;
-  $('#cep').value = d.cep;
+const d=tecnicosBase[nome]; if(!d) return;
+$('#endereco').value = `${d.endereco}${d.bairro? ', '+d.bairro:''}`;
+$('#cidadeuf').value = `${d.municipio} / ${d.uf}`;
+$('#cep').value = d.cep;
 }
-
-/* ======== ITENS NA TABELA ======== */
-function procurarPeca(codOuDesc){
-  const s = (codOuDesc||'').toString().toLowerCase();
-  if(!s) return null;
-  let p = itensBase.find(x=>x.codigo.toLowerCase()===s);
-  if(p) return p;
-  return itensBase.find(x=>x.descricao.toLowerCase().includes(s)) || null;
+/* ========= Numeração ========= */
+function gerarNumeroLocal(){
+const d=new Date();
+const key=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+let seq = JSON.parse(localStorage.getItem(LS.SEQ)||'{}');
+if(seq.date!==key){ seq={date:key,counter:1}; }
+const numero=`REQ-${key}-${String(seq.counter).padStart(4,'0')}`;
+$('#req-num').value=numero; seq.counter++; localStorage.setItem(LS.SEQ, JSON.stringify(seq));
 }
-
-function adicionarLinha(pref){
-  const tb = $('#tbl-itens tbody');
-  const tr = document.createElement('tr');
-  const dados = pref || {};
-  tr.innerHTML = `
-    <td><input class="codigo" list="pecas" value="${dados.codigo||''}"></td>
-    <td><input class="idmaq"  value="${dados.idMaquina||''}"></td>
-    <td><input class="qtd" type="number" min="1" value="${dados.qtd||1}"></td>
-    <td><input class="desc" value="${dados.descricao||''}"></td>
-    <td><input class="valor right" type="number" step="0.01" min="0" value="${dados.valor||0}"></td>
-    <td class="sub right">R$ 0,00</td>
-    <td>
-      <button class="ghost btn-dup">Duplicar</button>
-      <button class="btn-danger btn-del">Excluir</button>
-    </td>
-  `;
-  tb.appendChild(tr);
-
-  const iCod = tr.querySelector('.codigo');
-  const iDesc = tr.querySelector('.desc');
-  const iQtd = tr.querySelector('.qtd');
-  const iVal = tr.querySelector('.valor');
-
-  function preencherPeloCadastro(p){
-    if(!p) return;
-    iCod.value = p.codigo;
-    iDesc.value = p.descricao;
-    iVal.value = p.valor;
-    calcularTotais();
-  }
-
-  iCod.addEventListener('change',()=>preencherPeloCadastro(procurarPeca(iCod.value)));
-  iDesc.addEventListener('change',()=>preencherPeloCadastro(procurarPeca(iDesc.value)));
-  iQtd.addEventListener('input',()=>{ if(iQtd.value<=0) iQtd.value=1; calcularTotais(); });
-  iVal.addEventListener('input',()=>{ if(iVal.value<0) iVal.value=0; calcularTotais(); });
-
-  tr.querySelector('.btn-del').addEventListener('click',()=>{ tr.remove(); calcularTotais(); });
-  tr.querySelector('.btn-dup').addEventListener('click',()=>{
-    const item = coletarItensDaLinha(tr);
-    adicionarLinha(item);
-  });
-
-  if(dados.codigo){
-    const p = procurarPeca(dados.codigo);
-    if(p) preencherPeloCadastro(p);
-  }
-  calcularTotais();
+function proximoNumeroGlobal(){
+const d=new Date();
+const key=`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+const prefix=`REQ-${key}-`;
+const existentes=GLOBAL_CACHE.orders.filter(o=>(o.numero||'').startsWith(prefix));
+let maior=0; existentes.forEach(o=>{ const seq=Number((o.numero||'').slice(prefix.length)); if(Number.isFinite(seq)&&seq>maior) maior=seq; });
+return `${prefix}${String(maior+1).padStart(4,'0')}`;
 }
-
-function coletarItensDaLinha(tr){
-  const codigo = tr.querySelector('.codigo').value.trim().toUpperCase();
-  const idMaquina = tr.querySelector('.idmaq').value.trim();
-  const qtd = Math.max(1, Number(tr.querySelector('.qtd').value)||1);
-  const descricao = tr.querySelector('.desc').value.trim();
-  const valor = Math.max(0, Number(tr.querySelector('.valor').value)||0);
-  const subtotal = qtd * valor;
-  return {codigo,idMaquina,qtd,descricao,valor,subtotal};
-}
-
-function coletarItens(){
-  const itens = [];
-  $$('#tbl-itens tbody tr').forEach(tr=>{
-    const it = coletarItensDaLinha(tr);
-    if(it.descricao || it.codigo){
-      itens.push(it);
-    }
-  });
-  return itens;
-}
-
-function calcularTotais(){
-  let subtotal = 0;
-  let countItens = 0;
-  $$('#tbl-itens tbody tr').forEach(tr=>{
-    const it = coletarItensDaLinha(tr);
-    subtotal += it.subtotal;
-    if(it.descricao || it.codigo) countItens++;
-    tr.querySelector('.sub').textContent = BRL(it.subtotal);
-  });
-  const desc = Math.max(0, Number($('#desc-valor').value)||0);
-  const frete = Math.max(0, Number($('#frete').value)||0);
-  const total = Math.max(0, subtotal - desc + frete);
-  $('#subtotal').textContent = BRL(subtotal);
-  $('#total-geral').textContent = BRL(total);
-  $('#itens-count').textContent = `${countItens} ${countItens===1?'item':'itens'}`;
-  return {subtotal, descValor:desc, frete, total};
-}
-
-/* ======== MONTAR OBJETO DE PEDIDO ======== */
-function montarPedido(){
-  const tecnico = $('#tecnico').value.trim();
-  if(!tecnico){
-    showToast('Informe o técnico.');
-    return null;
-  }
-  const itens = coletarItens();
-  if(!itens.length){
-    showToast('Inclua ao menos 1 item.');
-    return null;
-  }
-  const totals = calcularTotais();
-  const [municipio='', uf=''] = ($('#cidadeuf').value || ' / ').split('/').map(s=>s.trim());
-  return {
-    numero: $('#req-num').value,
-    tecnico,
-    endereco: $('#endereco').value,
-    cidadeUF: $('#cidadeuf').value,
-    municipio, uf,
-    cep: $('#cep').value,
-    data: $('#data').value || new Date().toISOString().slice(0,10),
-    envio: $('#envio').value,
-    obs: $('#obs').value,
-    subtotal: totals.subtotal,
-    desconto: totals.descValor,
-    frete: totals.frete,
-    total: totals.total,
-    fluxo: 'Supervisor Diversey',
-    itens
-  };
-}
-
-/* ======== PDF & EXCEL (USANDO OBJETO PEDIDO) ======== */
-function exportarExcel(pedido){
-  const wb = XLSX.utils.book_new();
-  const cab = [
-    ['Número', pedido.numero || ''],
-    ['Data', pedido.data || ''],
-    ['Técnico', pedido.tecnico || ''],
-    ['Endereço', pedido.endereco || ''],
-    ['Cidade/UF', pedido.cidadeUF || ''],
-    ['CEP', pedido.cep || ''],
-    ['Envio', pedido.envio || ''],
-    ['Observações', pedido.obs || '']
-  ];
-  const wsCab = XLSX.utils.aoa_to_sheet(cab);
-  XLSX.utils.book_append_sheet(wb, wsCab, 'Cabeçalho');
-
-  const itens = [['Código','ID Máquina','Qtd','Descrição','Valor Unit.','Subtotal']];
-  (pedido.itens||[]).forEach(it=>{
-    itens.push([it.codigo,it.idMaquina,it.qtd,it.descricao,it.valor,it.subtotal]);
-  });
-  const wsItens = XLSX.utils.aoa_to_sheet(itens);
-  XLSX.utils.book_append_sheet(wb, wsItens, 'Itens');
-
-  const tot = [
-    ['Subtotal', pedido.subtotal],
-    ['Desconto (R$)', pedido.desconto],
-    ['Frete (R$)', pedido.frete],
-    ['TOTAL', pedido.total]
-  ];
-  const wsTot = XLSX.utils.aoa_to_sheet(tot);
-  XLSX.utils.book_append_sheet(wb, wsTot, 'Totais');
-
-  const safeTec = (pedido.tecnico||'').replace(/[\\\/:*?"<>|]+/g,'') || 'SemTecnico';
-  XLSX.writeFile(wb, `${pedido.numero || 'REQ'}-${safeTec}.xlsx`);
-}
-
-async function exportarPDF(pedido){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({unit:'pt',format:'a4'});
-  const M = 40;
-  const PAGE_W = doc.internal.pageSize.getWidth();
-  const PAGE_H = doc.internal.pageSize.getHeight();
-  const CONTENT_W = PAGE_W - 2*M;
-
-  function header(){
-    doc.setFillColor(16,185,129);
-    doc.rect(0,0,PAGE_W,3,'F');
-    doc.setFont('helvetica','bold');
-    doc.setFontSize(18);
-    doc.setTextColor(255,255,255);
-    doc.text('Diversey',M,20);
-    doc.setFontSize(11);
-    doc.text('A Solenis Company',M,35);
-    doc.setFontSize(14);
-    doc.text('Solicitação de Peças',M,55);
-  }
-  header();
-  let y = 80;
-  doc.setFontSize(10);
-  doc.setTextColor(0);
-  doc.text(`Número: ${pedido.numero}`,M,y); y+=14;
-  doc.text(`Data: ${pedido.data}`,M,y); y+=14;
-  doc.text(`Técnico: ${pedido.tecnico}`,M,y); y+=14;
-  doc.text(`Endereço: ${pedido.endereco}`,M,y); y+=14;
-  doc.text(`Cidade/UF: ${pedido.cidadeUF}`,M,y); y+=14;
-  doc.text(`CEP: ${pedido.cep}`,M,y); y+=18;
-  if((pedido.obs||'').trim()){
-    doc.text('Observações:',M,y); y+=12;
-    doc.text(String(pedido.obs),M,y,{maxWidth:CONTENT_W}); y+=24;
-  }
-
-  const body = (pedido.itens||[]).map(it=>[
-    it.codigo,
-    it.idMaquina,
-    it.qtd,
-    it.descricao,
-    BRL(it.valor),
-    BRL(it.subtotal)
-  ]);
-  doc.autoTable({
-    head:[['Código','ID Máquina','Qtd','Descrição','Valor Unit.','Subtotal']],
-    body: body.length? body : [['-','-','-','Sem itens','-','-']],
-    startY:y,
-    margin:{left:M,right:M},
-    styles:{fontSize:9,cellPadding:3},
-    headStyles:{fillColor:[15,23,42],textColor:255}
-  });
-  let fy = doc.lastAutoTable.finalY + 18;
-  if(fy + 80 > PAGE_H){
-    doc.addPage();
-    header();
-    fy = 80;
-  }
-  doc.text(`Subtotal: ${BRL(pedido.subtotal)}`,M,fy); fy+=14;
-  doc.text(`Desconto (R$): ${BRL(pedido.desconto)}`,M,fy); fy+=14;
-  doc.text(`Frete (R$): ${BRL(pedido.frete)}`,M,fy); fy+=14;
-  doc.setFont('helvetica','bold');
-  doc.text(`TOTAL: ${BRL(pedido.total)}`,M,fy);
-
-  const blob = doc.output('blob');
-  const safeTec = (pedido.tecnico||'').replace(/[\\\/:*?"<>|]+/g,'') || 'SemTecnico';
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${pedido.numero || 'REQ'}-${safeTec}.pdf`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-/* ======== HISTÓRICO (COM BACKEND) ======== */
-let HIST = [];
-
-function aplicarClasseFluxo(sel, fluxo){
-  sel.classList.remove('flow-sup','flow-forn','flow-rota','flow-ent');
-  if(fluxo === 'Fornecedor') sel.classList.add('flow-forn');
-  else if(fluxo === 'Rota de Entrega') sel.classList.add('flow-rota');
-  else if(fluxo === 'Entregue') sel.classList.add('flow-ent');
-  else sel.classList.add('flow-sup');
-}
-
-function renderHistorico(){
-  const tb = $('#tabela-hist tbody');
-  tb.innerHTML = '';
-  HIST.forEach(p=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="text-align:center"><input type="checkbox" class="hist-select" data-num="${p.numero}"></td>
-      <td>${p.numero}</td>
-      <td>${p.data}</td>
-      <td>${p.tecnico||'-'}</td>
-      <td>${p.qtItens||0}</td>
-      <td>${BRL(p.total||0)}</td>
-      <td></td>
-      <td></td>
-    `;
-    const sel = document.createElement('select');
-    sel.className = 'status';
-    ['Supervisor Diversey','Fornecedor','Rota de Entrega','Entregue'].forEach(st=>{
-      const opt = document.createElement('option');
-      opt.value = st;
-      opt.textContent = st;
-      if((p.fluxo||'Supervisor Diversey') === st) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    aplicarClasseFluxo(sel, sel.value);
-    sel.addEventListener('change', async ()=>{
-      try{
-        await api('atualizarFluxo',{numeros:[p.numero], fluxo:sel.value});
-        aplicarClasseFluxo(sel, sel.value);
-        p.fluxo = sel.value;
-        showToast('Fluxo atualizado.');
-      }catch(e){
-        sel.value = p.fluxo || 'Supervisor Diversey';
-        aplicarClasseFluxo(sel, sel.value);
-      }
-    });
-    tr.children[6].appendChild(sel);
-
-    const tdAcoes = tr.children[7];
-    const bAbrir = document.createElement('button');
-    bAbrir.textContent = 'Abrir';
-    bAbrir.addEventListener('click',()=>abrirPedido(p.numero));
-    const bDup = document.createElement('button');
-    bDup.textContent = 'Duplicar';
-    bDup.addEventListener('click',()=>duplicarPedido(p.numero));
-    const bX = document.createElement('button');
-    bX.textContent = 'Excel';
-    bX.addEventListener('click',()=>exportarExcel(p));
-    const bP = document.createElement('button');
-    bP.textContent = 'PDF';
-    bP.addEventListener('click',()=>exportarPDF(p));
-    tdAcoes.appendChild(bAbrir);
-    tdAcoes.appendChild(bDup);
-    tdAcoes.appendChild(bX);
-    tdAcoes.appendChild(bP);
-
-    tb.appendChild(tr);
-  });
-  $('#hist-count').textContent = HIST.length ? `• ${HIST.length} registro(s)` : '';
-  $('#hist-select-all').checked = false;
-}
-
-async function carregarHistorico(){
-  try{
-    const res = await api('listarSolicitacoes',{});
-    HIST = res.dados || [];
-    renderHistorico();
-    showToast('Histórico carregado.');
-  }catch(e){}
-}
-
-function obterSelecionados(){
-  const nums = [];
-  $$('#tabela-hist tbody input.hist-select').forEach(chk=>{
-    if(chk.checked) nums.push(chk.dataset.num);
-  });
-  return nums;
-}
-
-async function excluirSelecionados(){
-  const nums = obterSelecionados();
-  if(!nums.length){
-    showToast('Selecione ao menos um registro.');
-    return;
-  }
-  if(!confirm('Confirmar exclusão dos selecionados?')) return;
-  try{
-    await api('excluirSolicitacoes',{numeros:nums});
-    await carregarHistorico();
-    showToast('Excluídos com sucesso.');
-  }catch(e){}
-}
-
-function preencherFormulario(p){
-  $('#req-num').value = p.numero;
-  $('#tecnico').value = p.tecnico || '';
-  preencherEndereco(p.tecnico || '');
-  $('#data').value = p.data || '';
-  $('#envio').value = p.envio || 'Normal';
-  $('#obs').value = p.obs || '';
-  $('#desc-valor').value = p.desconto || 0;
-  $('#frete').value = p.frete || 0;
-  const tb = $('#tbl-itens tbody');
-  tb.innerHTML = '';
-  if(p.itens && p.itens.length){
-    p.itens.forEach(it=>adicionarLinha({
-      codigo: it.codigo,
-      idMaquina: it.idMaquina,
-      qtd: it.qtd,
-      descricao: it.descricao,
-      valor: it.valor
-    }));
-  }else{
-    adicionarLinha();
-  }
-  calcularTotais();
-}
-
-async function abrirPedido(numero){
-  const p = HIST.find(x=>x.numero===numero);
-  if(!p){
-    showToast('Registro não encontrado no histórico.');
-    return;
-  }
-  preencherFormulario(p);
-  showToast('Pedido carregado no formulário.');
-}
-
-async function duplicarPedido(numero){
-  const p = HIST.find(x=>x.numero===numero);
-  if(!p){
-    showToast('Registro não encontrado.');
-    return;
-  }
-  const novo = JSON.parse(JSON.stringify(p));
-  try{
-    const r = await api('proximoNumero',{});
-    novo.numero = r.numero;
-    preencherFormulario(novo);
-    showToast('Pedido duplicado. Verifique dados e envie.');
-  }catch(e){}
-}
-
-/* ======== FORM PRINCIPAL ======== */
 async function gerarNumero(){
-  try{
-    const r = await api('proximoNumero',{});
-    $('#req-num').value = r.numero;
-    $('#data').value = new Date().toISOString().slice(0,10);
-  }catch(e){}
+if(getModo()==='global'){
+const field=$('#req-num'); field.value='Sincronizando OneDrive...';
+try{
+if (!isOneDriveReady()) throw new Error('OneDrive não configurado.');
+await ensureGlobalCache();
+field.value=proximoNumeroGlobal();
 }
-
-async function salvarPedido(){
-  const pedido = montarPedido();
-  if(!pedido) return;
-  try{
-    await api('salvarSolicitacao',{
-      numero: pedido.numero,
-      tecnico: pedido.tecnico,
-      endereco: pedido.endereco,
-      cidadeUF: pedido.cidadeUF,
-      cep: pedido.cep,
-      data: pedido.data,
-      envio: pedido.envio,
-      obs: pedido.obs,
-      subtotal: pedido.subtotal,
-      desconto: pedido.desconto,
-      frete: pedido.frete,
-      total: pedido.total,
-      fluxo: pedido.fluxo
-    });
-    await api('salvarItens',{numero:pedido.numero, itens:pedido.itens});
-    showToast('Solicitação salva com sucesso.');
-    await carregarHistorico();
-    limparFormulario(true);
-  }catch(e){}
+catch(e){ console.error(e); toast(' '+(e.message||'Não foi possível ler os pedidos do OneDrive.')); field.value=''; }
+} else { gerarNumeroLocal(); }
 }
-
-function limparFormulario(manterNumero){
-  $('#tecnico').value = '';
-  $('#endereco').value = '';
-  $('#cidadeuf').value = '';
-  $('#cep').value = '';
-  $('#envio').value = 'Normal';
-  $('#obs').value = '';
-  $('#desc-valor').value = 0;
-  $('#frete').value = 0;
-  $('#tbl-itens tbody').innerHTML = '';
-  adicionarLinha();
-  calcularTotais();
-  if(!manterNumero){
-    gerarNumero();
-  }
+/* ========= Itens UI ========= */
+function findItem(input){
+const s=(input||'').toString().trim().toLowerCase(); if(!s) return null;
+const byCode=itensBase.find(x=>x.codigo.toLowerCase()===s); if(byCode) return byCode;
+return itensBase.find(x=>x.descricao.toLowerCase().includes(s))||null;
 }
-
-/* ======== INIT ======== */
-function bindEventos(){
-  $('#btn-config-api').addEventListener('click',()=>{
-    const u = prompt('Informe a URL do WebApp (termina com /exec)', API_URL || '');
-    if(u){
-      API_URL = u.trim();
-      localStorage.setItem('webappUrl', API_URL);
-      atualizarBadgeApi();
-      gerarNumero();
-      carregarHistorico();
-    }
-  });
-  $('#btn-add').addEventListener('click',()=>adicionarLinha());
-  $('#btn-add-blank').addEventListener('click',()=>adicionarLinha({}));
-  $('#desc-valor').addEventListener('input',calcularTotais);
-  $('#frete').addEventListener('input',calcularTotais);
-  $('#tecnico').addEventListener('change',()=>preencherEndereco($('#tecnico').value));
-  $('#btn-enviar').addEventListener('click',salvarPedido);
-  $('#btn-limpar').addEventListener('click',()=>limparFormulario(false));
-  $('#btn-excel').addEventListener('click',()=>{
-    const p = montarPedido();
-    if(p) exportarExcel(p);
-  });
-  $('#btn-pdf').addEventListener('click',()=>{
-    const p = montarPedido();
-    if(p) exportarPDF(p);
-  });
-  $('#btn-hist-atualizar').addEventListener('click',carregarHistorico);
-  $('#btn-hist-excluir').addEventListener('click',excluirSelecionados);
-  $('#hist-select-all').addEventListener('change',e=>{
-    const checked = e.target.checked;
-    $$('#tabela-hist tbody input.hist-select').forEach(chk=>chk.checked = checked);
-  });
+function addRow(pref={}){
+const tb=$('#tbl-itens tbody');
+const tr=document.createElement('tr');
+tr.innerHTML=`
+<td><input list="pecas" class="codigo" placeholder="CS001" value="${pref.codigo||''}"></td>
+<td><input class="idmaq" placeholder="Ex.: HLHDW8017-027" value="${pref.idMaquina||''}"></td>
+<td><input type="number" class="qtd" min="1" value="${clamp(pref.qtd||1,1,9999)}"></td>
+<td><input class="desc" placeholder="Descrição" value="${pref.descricao||''}"></td>
+<td><input type="number" step="0.01" class="valor right" min="0" value="${Number(pref.valor||0)||''}"></td>
+<td class="sub right">R$ 0,00</td>
+<td>
+<button class="ghost dup" title="Duplicar linha">⧉</button>
+<button class="btn-danger del">Excluir</button>
+</td>`;
+tb.appendChild(tr);
+const iCod=tr.querySelector('.codigo'), iDesc=tr.querySelector('.desc'), iQtd=tr.querySelector('.qtd'), iVal=tr.querySelector('.valor');
+function fill(it){ if(!it) return; iCod.value=it.codigo; iDesc.value=it.descricao; iVal.value=it.valor; calcTotal(); }
+iCod.addEventListener('change',()=>fill(findItem(iCod.value)));
+iDesc.addEventListener('change',()=>fill(findItem(iDesc.value)));
+iQtd.addEventListener('input',()=>{ iQtd.value=clamp(iQtd.value,1,9999); calcTotal(); validateRow(tr); });
+iVal.addEventListener('input',()=>{ iVal.value=Math.max(0,Number(iVal.value||0)); calcTotal(); validateRow(tr); });
+tr.querySelector('.del').addEventListener('click',()=>{ tr.remove(); calcTotal(); });
+tr.querySelector('.dup').addEventListener('click',()=>{
+addRow({
+codigo: iCod.value.trim().toUpperCase(),
+idMaquina: tr.querySelector('.idmaq').value.trim(),
+qtd: clamp(iQtd.value,1,9999),
+descricao: iDesc.value.trim(),
+valor: Math.max(0, Number(iVal.value)||0)
+});
+});
+if(pref.codigo){ fill(findItem(pref.codigo)); }
+calcTotal();
 }
-
+function mergeDuplicateItems(){
+const rows=[...$$('#tbl-itens tbody tr')];
+const map=new Map();
+rows.forEach(tr=>{
+const codigo=(tr.querySelector('.codigo').value||'').trim().toUpperCase();
+const desc=(tr.querySelector('.desc').value||'').trim();
+const val=Math.max(0, Number(tr.querySelector('.valor').value)||0);
+const id=(tr.querySelector('.idmaq').value||'').trim();
+const key=[codigo,desc,val,id].join('|');
+const qtd=clamp(tr.querySelector('.qtd').value,1,9999);
+if(!map.has(key)) map.set(key,{tr, qtd});
+else { const e=map.get(key); e.qtd += qtd; tr.remove(); }
+});
+map.forEach(({tr,qtd})=>{ tr.querySelector('.qtd').value=clamp(qtd,1,9999); });
+calcTotal();
+}
+function validateRow(tr){
+const iDesc=tr.querySelector('.desc');
+const iQtd=tr.querySelector('.qtd');
+const iVal=tr.querySelector('.valor');
+const okDesc=iDesc.value.trim().length>0;
+const okQtd=Number(iQtd.value)>=1;
+const okVal=Number(iVal.value)>=0;
+[iDesc,iQtd,iVal].forEach(el=>el.classList.remove('invalid'));
+if(!okDesc) iDesc.classList.add('invalid');
+if(!okQtd) iQtd.classList.add('invalid');
+if(!okVal) iVal.classList.add('invalid');
+}
+function collectItems(){
+const itens=[]; $$('#tbl-itens tbody tr').forEach(tr=>{
+const codigo=tr.querySelector('.codigo').value.trim().toUpperCase();
+const idMaquina=tr.querySelector('.idmaq').value.trim();
+const qtd=clamp(tr.querySelector('.qtd').value,1,9999);
+const descricao=tr.querySelector('.desc').value.trim();
+const valor=Math.max(0, Number(tr.querySelector('.valor').value)||0);
+if(descricao && qtd>0) itens.push({codigo,descricao,idMaquina,qtd,valor,subtotal:qtd*valor});
+}); return itens;
+}
+function calcTotal(){
+let subtotal=0, count=0;
+$$('#tbl-itens tbody tr').forEach(tr=>{
+const q=clamp(tr.querySelector('.qtd').value,1,9999);
+const v=Math.max(0, Number(tr.querySelector('.valor').value)||0);
+const s=q*v; subtotal+=s; tr.querySelector('.sub').textContent=BRL(s);
+const descOk=tr.querySelector('.desc').value.trim().length>0;
+if(descOk && q>0) count++;
+});
+const desc=Math.max(0, Number($('#desc-valor').value)||0);
+const frete=Math.max(0, Number($('#frete').value)||0);
+const total=Math.max(0, subtotal - desc + frete);
+$('#subtotal').textContent=BRL(subtotal);
+$('#total-geral').textContent=BRL(total);
+$('#itens-count').textContent = `${count} ${count===1?'item':'itens'}`;
+return {subtotal, descValor:desc, frete, total};
+}
+/* ========= Pedido ========= */
+function getOrder(){
+const it=collectItems();
+const t=calcTotal();
+const [municipio='', uf='']=($('#cidadeuf').value||' / ').split('/').map(s=>s.trim());
+return normalizePedido({
+numero:$('#req-num').value||'',
+data: $('#data').value || new Date().toISOString().slice(0,10),
+tecnico: $('#tecnico').value,
+endereco: $('#endereco').value,
+municipio, uf,
+cep: $('#cep').value,
+envio: $('#envio').value || 'Normal',
+obs: $('#obs').value||'',
+itens: it,
+...t,
+fluxo: 'Supervisor Diversey'
+});
+}
+function preencherFormularioPedido(o){
+if(!o) return;
+$('#req-num').value=o.numero||'';
+$('#tecnico').value=o.tecnico||'';
+preencherEndereco(o.tecnico||'');
+$('#data').value=(o.data||'').slice(0,10);
+$('#envio').value=o.envio||'Normal';
+$('#obs').value=o.obs||'';
+$('#desc-valor').value=o.descValor||0;
+$('#frete').value=o.frete||0;
+const tbody=$('#tbl-itens tbody'); tbody.innerHTML='';
+if(Array.isArray(o.itens)&&o.itens.length){
+o.itens.forEach(it=>addRow({codigo:it.codigo,descricao:it.descricao,idMaquina:it.idMaquina,qtd:it.qtd,valor:it.valor}));
+} else { addRow(); }
+calcTotal();
+}
+/* ========= Salvar Local/Global ========= */
+function coletarPedidoDados(){
+const tecnico=$('#tecnico').value; if(!tecnico){ toast('Selecione o técnico'); return null; }
+const itens=collectItems(); if(!itens.length){ toast('Inclua ao menos 1 item'); return null; }
+const tot=calcTotal();
+const [municipio='', uf='']=($('#cidadeuf').value||' / ').split('/').map(s=>s.trim());
+return normalizePedido({
+numero: $('#req-num').value || (getModo()==='global'?proximoNumeroGlobal():''), data: $('#data').value || new Date().toISOString().slice(0,10),
+tecnico, endereco: $('#endereco').value, municipio, uf, cep: $('#cep').value, envio: $('#envio').value || 'Normal', obs: $('#obs').value, ...tot, itens,
+fluxo: 'Supervisor Diversey'
+});
+}
+function salvarLocal(){
+const dados=coletarPedidoDados(); if(!dados) return false;
+const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+const i=lista.findIndex(o=>o.numero===dados.numero);
+if(i>=0){ dados.fluxo=lista[i].fluxo||dados.fluxo; lista[i]=dados; } else { lista.push(dados); }
+localStorage.setItem(LS.ORD, JSON.stringify(lista));
+localStorage.setItem(LS.CUR, JSON.stringify(dados));
+montarHistoricoLocal();
+return true;
+}
+async function salvarGlobal(){
+const dados=coletarPedidoDados(); if(!dados) return false;
+if (!isOneDriveReady()) {
+toast(' OneDrive não configurado/conectado. Abra " OneDrive" e informe link + token.');
+return false;
+}
+try{
+await ensureGlobalCache();
+const lista=GLOBAL_CACHE.orders.map(o=>normalizePedido(o));
+const idx=lista.findIndex(o=>o.numero===dados.numero);
+if(idx>=0){ dados.fluxo=lista[idx].fluxo||dados.fluxo; lista[idx]=dados; } else { lista.push(dados); }
+await salvarListaGlobal(lista);
+await montarHistoricoGlobal({refresh:false});
+localStorage.setItem(LS.CUR, JSON.stringify(dados));
+return true;
+}catch(e){ console.error('Salvar OneDrive', e); toast(e.message||'Falha ao salvar no OneDrive'); return false; }
+}
+async function salvarAtual(){ if(getModo()==='global') return await salvarGlobal(); return salvarLocal(); }
+/* ========= Histórico ========= */
+const byRecentFirst=(a,b)=>(b.data||'').localeCompare(a.data||'')||(b.numero||'').localeCompare(a.numero||'');
+function applyFlowStyle(sel, value){
+sel.classList.remove('flow-sup','flow-forn','flow-rota','flow-ent');
+if(value==='Supervisor Diversey') sel.classList.add('flow-sup');
+else if(value==='Fornecedor') sel.classList.add('flow-forn');
+else if(value==='Rota de Entrega') sel.classList.add('flow-rota');
+else if(value==='Entregue') sel.classList.add('flow-ent');
+else sel.classList.add('flow-sup');
+}
+function makeFlowSelect(value, disabled=false){
+const sel=document.createElement('select'); sel.className='status'; sel.disabled=disabled;
+['Supervisor Diversey','Fornecedor','Rota de Entrega','Entregue'].forEach(st=>{ const opt=document.createElement('option'); opt.value=st; opt.textContent=st; if(st===value) opt.selected=true; sel.appendChild(opt); });
+applyFlowStyle(sel, value||'Supervisor Diversey');
+sel.addEventListener('change', ()=>applyFlowStyle(sel, sel.value));
+return sel;
+}
+function bindSelectAll(){
+const master=$('#hist-select-all'); if(!master) return;
+master.addEventListener('change',()=>{ $$('#tabela-hist tbody input.hist-select').forEach(chk=>{ if(chk.closest('tr').style.display!=='none') chk.checked=master.checked; }); });
+}
+function btn(t,fn){ const b=document.createElement('button'); b.textContent=t; b.addEventListener('click',fn); return b; }
+function abrirLocal(numero){
+const L=(JSON.parse(localStorage.getItem(LS.ORD)||'[]')||[]).map(normalizePedido);
+const o=L.find(x=>x.numero===numero); if(!o){ toast('Pedido não encontrado (local)'); return; }
+preencherFormularioPedido(o); toast('Pedido aberto (local): '+numero);
+}
+async function abrirGlobal(numero){
+try{
+await ensureGlobalCache();
+const o=GLOBAL_CACHE.orders.find(x=>x.numero===numero);
+if(!o) return toast('Pedido não encontrado no OneDrive');
+preencherFormularioPedido(o); toast('Pedido aberto (global): '+numero);
+}catch(e){ console.error(e); toast('Falha ao abrir pedido do OneDrive'); }
+}
+function duplicarNoFormulario(o){
+if(!o) return;
+preencherFormularioPedido(o);
+if(getModo()==='global'){ $('#req-num').value = proximoNumeroGlobal(); }
+else { gerarNumeroLocal(); }
+toast('Pedido duplicado no formulário (defina ajustes e envie)');
+}
+// ====== Filtros do histórico ======
+function parseYYYYMMDD(s){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s||''); if(!m) return null; return {year:+m[1], month:+m[2]}; }
+function updateHistCount(){
+const rows=[...$$('#tabela-hist tbody tr')];
+const total=rows.length; const vis=rows.filter(r=>r.style.display!=="none").length;
+$('#hist-count').textContent = total? `• ${vis}/${total} visível(is)` : '';
+}
+function aplicaFiltros(){
+const fnum=($('#f-num').value||'').trim().toLowerCase();
+const fmes=($('#f-mes').value||'').trim();
+const fano=($('#f-ano').value||'').trim();
+const ftec=($('#f-tec').value||'').trim().toLowerCase();
+const fstat=($('#f-status').value||'').trim();
+const rows=$$('#tabela-hist tbody tr');
+rows.forEach(tr=>{
+const num=(tr.querySelector('.td-num')?.textContent||'').toLowerCase();
+const dat=(tr.querySelector('.td-data')?.textContent||'').trim();
+const tec=(tr.querySelector('.td-tec')?.textContent||'').toLowerCase();
+const st = tr.querySelector('select.status')?.value || '';
+let ok=true;
+if(fnum) ok = ok && num.includes(fnum);
+if(ftec) ok = ok && tec.includes(ftec);
+if(fstat) ok = ok && (st===fstat);
+if(fmes || fano){ const p=parseYYYYMMDD(dat); ok = ok && !!p; if(p){ if(fmes) ok = ok && String(p.month)===String(fmes); if(fano) ok = ok && String(p.year)===String(fano); } }
+tr.style.display = ok? '' : 'none';
+});
+const anyVisible = [...rows].some(tr=>tr.style.display!=="none");
+$('#hist-empty').style.display = anyVisible ? 'none' : 'block';
+updateHistCount();
+}
+function popularAnosFromLista(lista){
+const anos=new Set(); (lista||[]).forEach(o=>{ const p=parseYYYYMMDD(o.data); if(p) anos.add(p.year); });
+const selAno=$('#f-ano'); const prev = selAno.value; selAno.innerHTML='<option value="">Ano (todos)</option>' + [...anos].sort((a,b)=>b-a).map(y=>`<option>${y}</option>`).join('');
+if(prev) selAno.value=prev;
+}
+function bindFiltros(){
+['#f-num','#f-mes','#f-ano','#f-tec','#f-status'].forEach(id=>{
+$(id).addEventListener('input',aplicaFiltros);
+$(id).addEventListener('change',aplicaFiltros);
+});
+$('#f-limpar').addEventListener('click',()=>{
+$('#f-num').value=''; $('#f-mes').value=''; $('#f-ano').value=''; $('#f-tec').value=''; $('#f-status').value=''; aplicaFiltros();
+});
+}
+function getSelecionadosVisiveis(){
+return [...$$('#tabela-hist tbody tr')]
+.filter(tr=>tr.style.display!=="none")
+.map(tr=>{ const chk=tr.querySelector('input.hist-select'); return chk && chk.checked ? chk.value : null; })
+.filter(Boolean);
+}
+function montarHistoricoLocal(){
+const tb=$('#tabela-hist tbody'); tb.innerHTML='';
+let lista=(JSON.parse(localStorage.getItem(LS.ORD)||'[]')||[]).map(normalizePedido);
+lista.sort(byRecentFirst);
+$('#hist-empty').style.display=lista.length?'none':'block';
+for(const o of lista){
+const tr=document.createElement('tr');
+tr.innerHTML=`
+<td style="text-align:center"><input type="checkbox" class="hist-select" value="${o.numero}"></td>
+<td class="td-num">${o.numero}</td>
+<td class="td-data">${o.data}</td>
+<td class="td-tec">${o.tecnico||'-'}</td>
+<td>${o.itens?.length||0}</td>
+<td>${BRL(o.total||0)}</td>
+<td></td>
+<td></td>`;
+const sel=makeFlowSelect(o.fluxo||'Supervisor Diversey', false);
+sel.addEventListener('change',()=>{
+if(sel.value==='Entregue'&&!confirm('Confirmar entrega?')){ sel.value=o.fluxo||'Supervisor Diversey'; applyFlowStyle(sel, sel.value); return; }
+let L=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+const i=L.findIndex(x=>x.numero===o.numero);
+if(i>=0){ L[i].fluxo=sel.value; localStorage.setItem(LS.ORD, JSON.stringify(L)); toast('Fluxo atualizado: '+sel.value); }
+aplicaFiltros();
+});
+tr.children[6].appendChild(sel);
+const tdA=tr.children[7];
+tdA.appendChild(btn('Abrir',()=>abrirLocal(o.numero)));
+tdA.appendChild(btn(' Duplicar',()=>duplicarNoFormulario(o)));
+tdA.appendChild(btn(' Excel',()=>exportXLSXFrom(o)));
+tdA.appendChild(btn(' PDF',()=>baixarPDFFrom(o)));
+tb.appendChild(tr);
+}
+bindSelectAll();
+popularAnosFromLista(lista);
+aplicaFiltros();
+}
+async function montarHistoricoGlobal({refresh=false}={}){
+const tb=$('#tabela-hist tbody'); tb.innerHTML='';
+if (!isOneDriveReady()) {
+$('#hist-empty').style.display='block';
+toast(' OneDrive não configurado/conectado.');
+return;
+}
+try{
+await ensureGlobalCache(refresh);
+const lista=GLOBAL_CACHE.orders.slice().map(o=>normalizePedido(o)).sort(byRecentFirst);
+$('#hist-empty').style.display=lista.length?'none':'block';
+for(const o of lista){
+const tr=document.createElement('tr');
+tr.innerHTML=`
+<td style="text-align:center"><input type="checkbox" class="hist-select" value="${o.numero}"></td>
+<td class="td-num">${o.numero}</td>
+<td class="td-data">${o.data}</td>
+<td class="td-tec">${o.tecnico||'-'}</td>
+<td>${o.itens?.length||0}</td>
+<td>${BRL(o.total||0)}</td>
+<td></td>
+<td></td>`;
+const sel=makeFlowSelect(o.fluxo||'Supervisor Diversey', false);
+sel.addEventListener('change', async()=>{
+const novo=sel.value;
+if(novo==='Entregue' && !confirm('Confirmar entrega?')){ sel.value=o.fluxo||'Supervisor Diversey'; applyFlowStyle(sel, sel.value); return; }
+try{
+await ensureGlobalCache();
+const lista2=GLOBAL_CACHE.orders.map(x=>normalizePedido(x));
+const idx=lista2.findIndex(x=>x.numero===o.numero);
+if(idx<0) throw new Error('Pedido não encontrado');
+lista2[idx].fluxo=novo;
+await salvarListaGlobal(lista2);
+toast('Fluxo atualizado no OneDrive: '+novo);
+}catch(e){
+console.error(e);
+toast(e.message||'Falha ao atualizar no OneDrive');
+sel.value=o.fluxo||'Supervisor Diversey';
+applyFlowStyle(sel, sel.value);
+}
+aplicaFiltros();
+});
+tr.children[6].appendChild(sel);
+const tdA=tr.children[7];
+tdA.appendChild(btn('Abrir',()=>abrirGlobal(o.numero)));
+tdA.appendChild(btn(' Duplicar',()=>duplicarNoFormulario(o)));
+tdA.appendChild(btn(' Excel',()=>exportXLSXFrom(o)));
+tdA.appendChild(btn(' PDF',()=>baixarPDFFrom(o)));
+tb.appendChild(tr);
+}
+bindSelectAll();
+popularAnosFromLista(lista);
+aplicaFiltros();
+}catch(e){ console.error(e); toast('Erro ao montar histórico global'); }
+}
+/* ========= Excel ========= */
+function exportXLSXFrom(o){
+const wb = XLSX.utils.book_new();
+const cab = [
+['Número', o.numero||''], ['Data', fmtData(o.data)], ['Envio', o.envio||''],
+['Técnico', o.tecnico||''], ['Endereço', o.endereco||''],
+['Cidade/UF', `${o.municipio||''} / ${o.uf||''}`], ['CEP', fmtCEP(o.cep||'')],
+['Observações', (o.obs||'')]
+];
+const wsCab = XLSX.utils.aoa_to_sheet(cab);
+XLSX.utils.book_append_sheet(wb, wsCab, 'Cabeçalho');
+const itens = [['Código','ID Máquina','Qtd','Descrição','Valor Unit.','Subtotal']].concat(
+(o.itens||[]).map(it=>[it.codigo||'', it.idMaquina||'', it.qtd||0, it.descricao||'', it.valor||0, (it.qtd||0)*(it.valor||0)])
+);
+const wsItens = XLSX.utils.aoa_to_sheet(itens);
+XLSX.utils.book_append_sheet(wb, wsItens, 'Itens');
+const tot = [['Subtotal', o.subtotal||0],['Desconto (R$)', o.descValor||0],['Frete (R$)', o.frete||0],['TOTAL', o.total||0]];
+const wsTot = XLSX.utils.aoa_to_sheet(tot);
+XLSX.utils.book_append_sheet(wb, wsTot, 'Totais');
+const fname = `${(o.numero||'REQ')}-${(o.tecnico||'SemTecnico').replace(/[\\\/:*?"<>|]+/g,'')}.xlsx`;
+XLSX.writeFile(wb, fname);
+}
+/* ========= Export/Import Histórico ========= */
+async function exportHistoricoXLSX(){
+const numeros=[...$$('#tabela-hist tbody tr')].filter(tr=>tr.style.display!=="none").map(tr=>tr.querySelector('.hist-select')?.value).filter(Boolean);
+let lista=[];
+if(getModo()==='global'){ await ensureGlobalCache(); lista = GLOBAL_CACHE.orders.slice(); }
+else { lista = JSON.parse(localStorage.getItem(LS.ORD)||'[]'); }
+const pedidos = lista.map(normalizePedido).filter(p=>numeros.includes(p.numero));
+const wb = XLSX.utils.book_new();
+const header=['Número','Data','Técnico','Itens','Total','Fluxo','Envio','CEP','Cidade','UF'];
+const rows = pedidos.map(p=>[p.numero,p.data,p.tecnico,p.itens?.length||0,p.total,p.fluxo,p.envio,fmtCEP(p.cep),p.municipio,p.uf]);
+const ws1 = XLSX.utils.aoa_to_sheet([header, ...rows]);
+XLSX.utils.book_append_sheet(wb, ws1, 'Pedidos');
+const headerItens=['Número','Código','ID Máquina','Qtd','Descrição','Valor Unit','Subtotal'];
+const rowsItens=[];
+pedidos.forEach(p=> (p.itens||[]).forEach(it=> rowsItens.push([p.numero,it.codigo,it.idMaquina,it.qtd,it.descricao,it.valor,it.qtd*it.valor])));
+const ws2 = XLSX.utils.aoa_to_sheet([headerItens, ...rowsItens]);
+XLSX.utils.book_append_sheet(wb, ws2, 'Itens');
+XLSX.writeFile(wb, `historico-${getModo()}-${new Date().toISOString().slice(0,10)}.xlsx`);
+toast('Histórico exportado (Excel)');
+}
+function exportHistoricoJSON(){
+if(getModo()!=='local'){ return toast('Exportar JSON disponível apenas no modo LOCAL'); }
+const lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]').map(normalizePedido);
+const blob=new Blob([JSON.stringify(lista,null,2)],{type:'application/json'});
+const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+a.download=`historico-local-${new Date().toISOString().slice(0,10)}.json`;
+a.click(); URL.revokeObjectURL(a.href);
+}
+function importHistoricoJSON(file){
+if(getModo()!=='local'){ toast('Importar JSON disponível apenas no modo LOCAL'); return; }
+const reader=new FileReader();
+reader.onload=()=>{
+try{
+const arr=JSON.parse(reader.result||'[]');
+if(!Array.isArray(arr)) throw new Error('JSON deve ser um array de pedidos');
+const novos=arr.map(normalizePedido);
+const atual=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+const map=new Map(atual.map(p=>[p.numero,p]));
+let add=0, upd=0;
+novos.forEach(n=>{ if(map.has(n.numero)){ map.set(n.numero,n); upd++; } else { map.set(n.numero,n); add++; } });
+const merged=[...map.values()];
+localStorage.setItem(LS.ORD, JSON.stringify(merged));
+montarHistoricoLocal();
+toast(`Importado: ${add} novos, ${upd} atualizados`);
+}catch(e){ toast('Falha ao importar JSON'); }
+};
+reader.readAsText(file);
+}
+/* ========= PDF ========= */
+const PDF_THEME = {
+primary:[15,30,50],
+accent:[16,185,129],
+zebra:[247,249,252],
+border:[220,220,220],
+boxFill:[246,248,250],
+title:'Solicitação de Peças e Componentes',
+fonts:{base:9.5,small:8.5,title:15,brand:20,slogan:9.5}
+};
+const BRL_FMT=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const makeSafeFilename=s=>(s||'').replace(/[\\\/:*?"<>|]+/g,'').trim()||'SemTecnico';
+async function baixarPDFFrom(o){
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF({unit:'pt',format:'a4'});
+const M=40, PAGE_W=doc.internal.pageSize.getWidth(), PAGE_H=doc.internal.pageSize.getHeight();
+const CONTENT_W=PAGE_W-2*M, GAP=14, HALF_W=(CONTENT_W-14)/2;
+function drawHeader(){
+const y=24;
+doc.setFillColor(...PDF_THEME.accent);
+doc.rect(0,0,PAGE_W,3,'F');
+doc.setFont('helvetica','bold'); doc.setFontSize(PDF_THEME.fonts.brand); doc.setTextColor(...PDF_THEME.primary);
+doc.text('Diversey',M,y+12);
+doc.setFontSize(PDF_THEME.fonts.slogan); doc.setTextColor(...PDF_THEME.accent);
+doc.text('A Solenis Company',M,y+26);
+doc.setFont('helvetica','bold'); doc.setTextColor(...PDF_THEME.primary); doc.setFontSize(PDF_THEME.fonts.title);
+doc.text(PDF_THEME.title,M,y+48);
+doc.setDrawColor(...PDF_THEME.border);
+doc.line(M,y+54,PAGE_W-M,y+54);
+}
+function drawFooter(){
+const pages=doc.internal.getNumberOfPages();
+for(let i=1;i<=pages;i++){
+doc.setPage(i);
+const ts=new Date().toLocaleString('pt-BR');
+doc.setFontSize(PDF_THEME.fonts.small);
+doc.setTextColor(110);
+doc.text(`Gerado em: ${ts}`,M,PAGE_H-18);
+doc.text(`Página ${i}/${pages}`,PAGE_W-M,PAGE_H-18,{align:'right'});
+}
+}
+function kvTable(y,left,rows,w){
+doc.autoTable({
+startY:y,
+margin:{left,right:PAGE_W-left-w},
+tableWidth:w,
+theme:'grid',
+styles:{fontSize:PDF_THEME.fonts.base,cellPadding:{top:3.5,right:6,bottom:3.5,left:6}},
+head:[],
+body:rows.map(([k,v])=>[{content:k,styles:{fontStyle:'bold'}},String(v||'-')]),
+columnStyles:{0:{cellWidth:90},1:{cellWidth:w-90}},
+didDrawPage:()=>drawHeader()
+});
+return doc.lastAutoTable.finalY||y;
+}
+drawHeader();
+let y=84;
+const yA=kvTable(y,M,[["Número",o.numero||''],["Data",fmtData(o.data)],["Envio",o.envio||'Normal'],["CEP",fmtCEP(o.cep||'')]],HALF_W);
+const yB=kvTable(y,M+HALF_W+GAP,[["Técnico",o.tecnico||''],["Endereço",o.endereco||''],["Cidade / UF",`${o.municipio||''} / ${o.uf||''}`]],HALF_W);
+y=Math.max(yA,yB)+GAP;
+if((o.obs||'').trim()){
+doc.autoTable({
+startY:y,
+margin:{left:M,right:M},
+tableWidth:CONTENT_W,
+theme:'grid',
+body:[[{'content':'Observações','styles':{fontStyle:'bold'}},String(o.obs)]],
+columnStyles:{0:{cellWidth:100},1:{cellWidth:CONTENT_W-100}},
+styles:{fontSize:PDF_THEME.fonts.base,cellPadding:3.5},
+didDrawPage:()=>drawHeader()
+});
+y=doc.lastAutoTable.finalY+GAP;
+}
+const itens=(o.itens||[]).map(it=>({
+codigo:it.codigo||'',id:it.idMaquina||'',qtd:Number(it.qtd||0),
+desc:it.descricao||'',vunit:BRL_FMT(it.valor||0),sub:BRL_FMT((it.qtd||0)*(it.valor||0))
+}));
+doc.autoTable({
+startY:y,
+margin:{left:M,right:M},
+tableWidth:CONTENT_W,
+theme:'grid',
+headStyles:{fillColor:[245,245,245],textColor:40,fontStyle:'bold'},
+bodyStyles:{fontSize:PDF_THEME.fonts.base,cellPadding:{top:3.5,bottom:3.5,left:6,right:6}},
+alternateRowStyles:{fillColor:PDF_THEME.zebra},
+columns:[
+{header:'Código',dataKey:'codigo'},
+{header:'ID Máquina',dataKey:'id'},
+{header:'Qtd',dataKey:'qtd'},
+{header:'Descrição',dataKey:'desc'},
+{header:'Valor Unit.',dataKey:'vunit'},
+{header:'Subtotal',dataKey:'sub'}
+],
+columnStyles:{
+codigo:{cellWidth:65}, id:{cellWidth:120}, qtd:{cellWidth:35,halign:'center'},
+desc:{cellWidth:CONTENT_W-410}, vunit:{cellWidth:80,halign:'right'}, sub:{cellWidth:90,halign:'right'}
+},
+body:itens.length?itens:[{codigo:'—',id:'—',qtd:'—',desc:'Sem itens',vunit:'—',sub:'—'}],
+didDrawPage:()=>drawHeader()
+});
+let afterY=doc.lastAutoTable.finalY+GAP;
+const boxW=260,boxH=100,boxX=M+CONTENT_W-boxW;
+if(afterY+boxH+80>PAGE_H){doc.addPage();drawHeader();afterY=96;}
+doc.setDrawColor(230);doc.setFillColor(...PDF_THEME.boxFill);
+doc.roundedRect(boxX,afterY,boxW,boxH,6,6,'FD');
+const r=(t,v,y0,b=false)=>{doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(PDF_THEME.fonts.base);
+doc.text(t,boxX+10,y0);doc.text(BRL_FMT(Number(v||0)),boxX+boxW-10,y0,{align:'right'});};
+r('Subtotal',o.subtotal,afterY+18);
+r('Desconto (R$)',o.descValor,afterY+36);
+r('Frete (R$)',o.frete,afterY+54);
+doc.line(boxX+8,afterY+62,boxX+boxW-8,afterY+62);
+r('TOTAL',o.total,afterY+80,true);
+doc.setFontSize(PDF_THEME.fonts.base);
+doc.text(`Fluxo de aprovação: ${o.fluxo||'Supervisor Diversey'}`,M,afterY+boxH+30);
+let sigY=afterY+boxH+60;
+if(sigY>PAGE_H-80){doc.addPage();drawHeader();sigY=100;}
+doc.setDrawColor(150);
+doc.line(M,sigY,M+220,sigY); doc.text('Solicitante',M,sigY+14);
+doc.line(M+260,sigY,M+480,sigY); doc.text('Recebido por',M+260,sigY+14);
+drawFooter();
+const blob=doc.output('blob');
+const safeTec=makeSafeFilename(o.tecnico);
+const a=document.createElement('a');
+a.href=URL.createObjectURL(blob);
+a.download=`${o.numero||'REQ'} - ${safeTec}.pdf`;
+a.click();URL.revokeObjectURL(a.href);
+}
+/* ========= UI/Status Aux ========= */
+function updateODStatus(){
+const ready=isOneDriveReady();
+const badge=$('#badge-od');
+if(!badge) return;
+if(getModo()==='global'){
+badge.textContent = `OneDrive: ${ready?'OK ':'não configurado'}`;
+}else{
+badge.textContent = 'OneDrive: inativo (modo local)';
+}
+}
+function updateSyncBadge(){
+const cfg=OneDriveStore.getConfig();
+const badge=$('#badge-sync');
+if(!badge) return;
+if(getModo()==='global'){
+badge.textContent=`Auto-sync: ${cfg.refreshMinutes||GLOBAL_REFRESH_MIN_DEFAULT} min`;
+}else{
+badge.textContent='Auto-sync: n/d';
+}
+}
+/* ========= Ações UI ========= */
+function resetForm(){
+$('#tecnico').value=''; $('#endereco').value=''; $('#cidadeuf').value=''; $('#cep').value='';
+$('#obs').value=''; $('#desc-valor').value=0; $('#frete').value=0;
+$('#tbl-itens tbody').innerHTML=''; addRow(); calcTotal(); gerarNumero();
+}
+async function enviarPedido(){
+const ok = await salvarAtual();
+if(!ok) return;
+toast('Solicitação salva com sucesso!');
+// prepara para o próximo pedido
+resetForm();
+const tecInput = $('#tecnico');
+if(tecInput) tecInput.focus();
+}
+function excluirSelecionadosLocal(){
+const marcados=getSelecionadosVisiveis();
+if(!marcados.length) return toast('Nada selecionado');
+let lista=JSON.parse(localStorage.getItem(LS.ORD)||'[]');
+lista=lista.filter(o=>!marcados.includes(o.numero));
+localStorage.setItem(LS.ORD, JSON.stringify(lista));
+montarHistoricoLocal(); toast('Excluídos (local): '+marcados.length);
+}
+async function excluirSelecionadosGlobal(){
+const marcados=getSelecionadosVisiveis();
+if(!marcados.length) return toast('Nada selecionado');
+try{
+await ensureGlobalCache(true);
+const nova=GLOBAL_CACHE.orders.filter(o=>!marcados.includes(o.numero));
+await salvarListaGlobal(nova);
+await montarHistoricoGlobal({refresh:true});
+toast('Excluídos no OneDrive: '+marcados.length);
+}catch(e){ console.error(e); toast('Falha ao excluir no OneDrive'); }
+}
+/* Bulk status */
+async function aplicarStatusEmLote(){
+const status = $('#bulk-status').value;
+if(!status) return toast('Selecione um status');
+const nums = getSelecionadosVisiveis();
+if(!nums.length) return toast('Nada selecionado');
+if(status==='Entregue' && !confirm('Confirmar entrega em lote?')) return;
+if(getModo()==='global'){
+try{
+await ensureGlobalCache();
+const lista=GLOBAL_CACHE.orders.map(normalizePedido);
+let upd=0;
+lista.forEach(p=>{ if(nums.includes(p.numero)){ p.fluxo=status; upd++; }});
+await salvarListaGlobal(lista);
+await montarHistoricoGlobal({refresh:false});
+toast(`Atualizados (global): ${upd}`);
+}catch(e){ console.error(e); toast('Falha ao aplicar lote (global)'); }
+}else{
+let L=(JSON.parse(localStorage.getItem(LS.ORD)||'[]')||[]);
+let upd=0;
+L=L.map(p=>{ if(nums.includes(p.numero)){ upd++; return {...p, fluxo:status}; } return p; });
+localStorage.setItem(LS.ORD, JSON.stringify(L));
+montarHistoricoLocal();
+toast(`Atualizados (local): ${upd}`);
+}
+}
+/* ========= OneDrive Modal ========= */
+function abrirModal(){ $('#modal-onedrive').style.display='flex'; const cfg=OneDriveStore.getConfig(); $('#onedrive-share').value=cfg.shareUrl; $('#onedrive-token').value=cfg.accessToken; $('#onedrive-refresh-min').value=cfg.refreshMinutes; $('#onedrive-arquivo').value=cfg.fileName; }
+function fecharModal(){ $('#modal-onedrive').style.display='none'; }
+async function testarOneDrive(){
+try{
+const cfg={ shareUrl:$('#onedrive-share').value, accessToken:$('#onedrive-token').value, refreshMinutes:Number($('#onedrive-refresh-min').value||10), fileName:$('#onedrive-arquivo').value };
+await OneDriveStore.testConfig(cfg);
+toast('Conexão OK ');
+}catch(e){ toast(e.message||'Falha ao testar conexão'); }
+}
+function salvarConfigOneDrive(){
+const cfg=OneDriveStore.setConfig({ shareUrl:$('#onedrive-share').value, accessToken:$('#onedrive-token').value, refreshMinutes:Number($('#onedrive-refresh-min').value||10), fileName:$('#onedrive-arquivo').value });
+fecharModal(); toast('Configuração salva'); setModo('global'); updateSyncBadge();
+}
+// Helper para saber se o OneDrive está configurado
+function isOneDriveReady(){ const cfg=OneDriveStore.getConfig(); return !!(cfg.shareUrl && cfg.accessToken); }
+/* ========= Init / Eventos ========= */
+function bindEvents(){
+$('#btn-add').addEventListener('click',()=>addRow());
+$('#btn-add-blank').addEventListener('click',()=>addRow({}));
+$('#btn-merge').addEventListener('click',mergeDuplicateItems);
+$('#desc-valor').addEventListener('input',calcTotal);
+$('#frete').addEventListener('input',calcTotal);
+$('#tecnico').addEventListener('change',()=>preencherEndereco($('#tecnico').value));
+$('#btn-enviar').addEventListener('click',enviarPedido);
+$('#btn-xlsx').addEventListener('click',()=>exportXLSXFrom(getOrder()));
+$('#btn-pdf').addEventListener('click',()=>baixarPDFFrom(getOrder()));
+$('#btn-clear').addEventListener('click',resetForm);
+$('#btn-modo-local').addEventListener('click',()=>{ setModo('local'); montarHistoricoLocal(); toast('Modo LOCAL'); });
+$('#btn-modo-global').addEventListener('click',()=>{ setModo('global'); toast('Modo GLOBAL'); });
+$('#btn-onedrive-config').addEventListener('click',abrirModal);
+$('#onedrive-cancelar').addEventListener('click',fecharModal);
+$('#onedrive-testar').addEventListener('click',testarOneDrive);
+$('#onedrive-salvar').addEventListener('click',salvarConfigOneDrive);
+$('#btn-global-sync').addEventListener('click', async()=>{
+if(getModo()!=='global') return toast('Sincronização global só no modo GLOBAL');
+if(!isOneDriveReady()) return toast(' OneDrive não configurado/conectado.');
+try{
+await ensureGlobalCache(true);
+await montarHistoricoGlobal({refresh:true});
+toast('Sincronizado com OneDrive');
+}catch(e){ toast(e.message||'Falha ao sincronizar'); }
+});
+$('#btn-hist').addEventListener('click',()=>{ if(getModo()==='global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal(); });
+$('#btn-hist-mostrar').addEventListener('click',()=>$('#hist-content').style.display='block');
+$('#btn-hist-ocultar').addEventListener('click',()=>$('#hist-content').style.display='none');
+$('#hist-del').addEventListener('click',()=>{ if(getModo()==='global' && isOneDriveReady()) excluirSelecionadosGlobal(); else excluirSelecionadosLocal(); });
+// Export/Import Histórico
+$('#hist-export-xlsx').addEventListener('click',exportHistoricoXLSX);
+$('#hist-export').addEventListener('click',exportHistoricoJSON);
+$('#hist-import').addEventListener('click',()=>$('#hist-import-file').click());
+$('#hist-import-file').addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) importHistoricoJSON(f); e.target.value=''; });
+// Status em lote
+$('#bulk-apply').addEventListener('click',aplicarStatusEmLote);
+// filtros do histórico
+bindFiltros();
+// atalhos
+document.addEventListener('keydown',e=>{
+if(e.ctrlKey && e.key.toLowerCase()==='enter'){ e.preventDefault(); addRow(); }
+if(e.ctrlKey && e.key.toLowerCase()==='e'){ e.preventDefault(); enviarPedido(); }
+if(e.ctrlKey && e.key.toLowerCase()==='p'){ e.preventDefault(); baixarPDFFrom(getOrder()); }
+});
+}
 async function init(){
-  carregarApiUrl();
-  preencherTecnicos();
-  preencherPecas();
-  adicionarLinha();
-  bindEventos();
-  if(API_URL){
-    await gerarNumero();
-    await carregarHistorico();
-  }
+preencherListas();
+if(!$('#tbl-itens tbody').children.length) addRow();
+updateODStatus(); updateSyncBadge();
+if(getModo()==='global' && !isOneDriveReady()){
+toast(' OneDrive não configurado/conectado. Clique em " OneDrive" para configurar.');
 }
-
-window.addEventListener('load', init);
+if(getModo()==='global'){ try{ await ensureGlobalCache(); }catch(e){ toast(e.message||'Falha ao conectar ao OneDrive'); } }
+gerarNumero();
+if(getModo()==='global') montarHistoricoGlobal({refresh:true}); else montarHistoricoLocal();
+}
+bindEvents(); init();
 </script>
 </body>
 </html>
