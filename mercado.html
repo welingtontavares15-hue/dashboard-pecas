@@ -2,475 +2,1845 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Ações e Fundos Imobiliários</title>
+  <title>Agenda da Manicure Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #050816;
-      --card: rgba(16, 24, 40, 0.72);
-      --card-solid: #111827;
-      --accent: #38bdf8;
-      --accent-strong: #0ea5e9;
-      --text: #f8fafc;
-      --muted: #cbd5f5;
-      --positive: #22c55e;
-      --negative: #ef4444;
-      --border: rgba(148, 163, 184, 0.25);
+      --bg-page: #0b1020;
+      --bg-card: #111827;
+      --bg-header: #020617cc;
+      --border-soft: #1e293b;
+      --shadow-soft: 0 18px 40px rgba(15,23,42,0.55);
+
+      --primary: #e11d48;
+      --primary-soft: #f472b6;
+      --primary-dark: #9f1239;
+
+      --text-main: #e5e7eb;
+      --text-soft: #9ca3af;
+      --text-muted: #6b7280;
+      --text-strong: #f9fafb;
+
+      --success: #22c55e;
+      --warning: #fbbf24;
+      --danger: #ef4444;
     }
 
     * {
       box-sizing: border-box;
-      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
+      color: var(--text-main);
     }
 
     body {
-      margin: 0;
       min-height: 100vh;
-      background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.25), transparent 45%),
-                  radial-gradient(circle at bottom left, rgba(249, 115, 22, 0.18), transparent 45%),
-                  var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      padding: 32px 20px 48px;
     }
 
     header {
-      max-width: 1200px;
-      width: 100%;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(12px);
+      background: radial-gradient(circle at top left, rgba(248,113,113,0.06), transparent 45%),
+                  linear-gradient(to right, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+      border-bottom: 1px solid rgba(148,163,184,0.25);
+      padding: 10px 14px 8px;
+    }
+
+    .header-inner {
+      max-width: 900px;
       margin: 0 auto;
       display: flex;
-      flex-wrap: wrap;
+      align-items: center;
       justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 20px 24px;
-      border-radius: 20px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(14px);
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: clamp(1.4rem, 4vw, 2rem);
+    .header-title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-row {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 8px;
     }
 
-    header h1 span {
-      font-size: 1.8rem;
+    .logo-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #f9a8d4, #e11d48);
+      box-shadow: 0 0 18px rgba(244,114,182,0.8);
+      position: relative;
+      overflow: hidden;
     }
 
-    .market-meta {
+    .logo-dot::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: inherit;
+      border: 2px solid rgba(248,250,252,0.25);
+    }
+
+    .header-title h1 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 650;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+
+    .header-sub {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+
+    .header-badges {
       display: flex;
       flex-wrap: wrap;
-      gap: 18px;
+      gap: 6px;
+    }
+
+    .badge {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(148,163,184,0.6);
+      color: var(--text-soft);
+      display: inline-flex;
       align-items: center;
-      color: var(--muted);
+      gap: 4px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 6px rgba(34,197,94,0.9);
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 12px 12px 32px;
+    }
+
+    @media (min-width: 720px) {
+      .page { padding-inline: 16px; }
+    }
+
+    .tabs {
+      display: inline-flex;
+      padding: 3px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+      box-shadow: 0 14px 30px rgba(15,23,42,0.8);
+      margin-bottom: 12px;
+      gap: 3px;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-soft);
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .05s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn span {
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .tab-btn-icon {
       font-size: 0.95rem;
     }
 
-    .market-meta strong {
-      color: var(--text);
+    .tab-btn.active {
+      background: radial-gradient(circle at top, #fb7185, #e11d48);
+      color: #fdf2f8;
+      box-shadow: 0 10px 22px rgba(248,113,113,0.6);
     }
 
-    main {
-      flex: 1;
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      gap: 24px;
+    .tab-btn:not(.active):hover {
+      background: rgba(15,23,42,0.9);
     }
 
-    .grid-panels {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 24px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.35);
-    }
-
-    .panel h2 {
-      margin: 0 0 16px;
-      font-size: 1.3rem;
+    .toast {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      background: rgba(15,23,42,0.98);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.8rem;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid rgba(148,163,184,0.6);
+      color: var(--text-main);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.7);
+      z-index: 80;
+      opacity: 0;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast-icon { font-size: 0.9rem; }
+    .toast-success { border-color: rgba(34,197,94,0.6); }
+    .toast-error { border-color: rgba(239,68,68,0.7); }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
       gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 780px) {
+      .cards-grid { grid-template-columns: minmax(0, 1fr); }
     }
 
-    .panel h2 span {
-      font-size: 0.9rem;
-      color: var(--muted);
+    .card {
+      background: radial-gradient(circle at top left, rgba(248,250,252,0.08), transparent 60%), var(--bg-card);
+      border-radius: 18px;
+      border: 1px solid rgba(30,64,175,0.75);
+      box-shadow: var(--shadow-soft);
+      padding: 12px 12px 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background: radial-gradient(circle at top right, rgba(248,113,113,0.15), transparent 58%);
+      pointer-events: none;
+      opacity: .9;
+    }
+    .card-inner { position: relative; z-index: 1; }
+
+    .card-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .card-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-title-bar {
+      width: 6px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #fb7185, #22c55e);
+    }
+    .card-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .chip {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.5);
+      color: var(--text-soft);
+      white-space: nowrap;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+    .form-row-inline {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 520px) {
+      .form-row-inline { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label {
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+    .field label span {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select {
+      border-radius: 12px;
+      border: 1px solid rgba(15,23,42,0.9);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
+      padding: 9px 10px;
+      font-size: 0.85rem;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease, transform .05s ease;
+    }
+    input::placeholder { color: rgba(148,163,184,0.75); }
+    select { padding-right: 24px; }
+    input:focus, select:focus {
+      border-color: var(--primary-soft);
+      box-shadow: 0 0 0 1px rgba(248,113,113,0.7);
+      transform: translateY(-0.5px);
+    }
+    input[type="date"], input[type="time"] { font-size: 0.82rem; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .btn {
+      appearance: none;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 9px 14px;
+      font-size: 0.82rem;
       font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: background-color 0.15s ease, box-shadow .18s ease, transform .08s ease, border-color .18s ease;
+      background: rgba(15,23,42,0.9);
+      color: var(--text-main);
+    }
+    .btn:active { transform: translateY(1px) scale(0.99); box-shadow: none; }
+    .btn-primary {
+      background: radial-gradient(circle at top, #fb7185, #e11d48);
+      border-color: rgba(248,113,113,0.95);
+      box-shadow: 0 10px 25px rgba(248,113,113,0.5);
+      color: #fdf2f8;
+    }
+    .btn-primary:hover {
+      background: radial-gradient(circle at top, #f97316, #be123c);
+    }
+    .btn-ghost {
+      border-color: rgba(148,163,184,0.5);
+      background: transparent;
+    }
+    .btn-ghost:hover { background: rgba(15,23,42,0.9); }
+    .btn-danger {
+      border-color: rgba(248,113,113,0.7);
+      background: rgba(127,29,29,0.8);
+      color: #fee2e2;
+    }
+    .btn-danger:hover { background: rgba(185,28,28,0.95); }
+    .btn-small { padding: 6px 10px; font-size: 0.78rem; }
+    .btn-icon { font-size: 0.9rem; }
+    .btn[disabled] { opacity: .6; cursor: default; box-shadow: none; transform: none; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3,minmax(0,1fr));
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 520px) {
+      .summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    }
+    .summary-card {
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.9), #020617);
+      border-radius: 14px;
+      padding: 7px 9px;
+      border: 1px solid rgba(51,65,85,0.9);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 0.78rem;
+    }
+    .summary-label {
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.7rem;
+    }
+    .summary-value {
+      font-size: 1rem;
+      font-weight: 650;
+      color: var(--text-strong);
+    }
+    .summary-extra {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+    }
+    .summary-value.positive { color: var(--success); }
+    .summary-value.warning { color: var(--warning); }
+    .summary-value.danger { color: var(--danger); }
+
+    .summary-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+      font-size: 0.7rem;
+    }
+    .summary-pill {
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.5);
+      color: var(--text-soft);
+    }
+
+    .filters-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .filters-row input[type="date"] { min-width: 130px; }
+    @media (max-width: 520px) {
+      .filters-row { flex-direction: column; align-items: stretch; }
+      .filters-row > * { width: 100%; }
+    }
+
+    .table-wrapper {
+      margin-top: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(30,64,175,0.8);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.95), #020617);
+      box-shadow: 0 16px 38px rgba(15,23,42,0.9);
+      overflow: hidden;
+    }
+    .table-scroll {
+      max-height: 380px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .table-scroll::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: #4b5563;
+      border-radius: 999px;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 0.78rem;
+      table-layout: fixed;
     }
 
-    thead th {
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th {
+      padding: 7px 9px;
       text-align: left;
-      font-size: 0.85rem;
       font-weight: 600;
-      color: var(--muted);
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 0.7rem;
+      background: radial-gradient(circle at top, #020617, #020617);
+      border-bottom: 1px solid rgba(30,64,175,0.7);
+      color: #9ca3af;
+      white-space: nowrap;
     }
 
-    tbody tr {
-      transition: transform 0.2s ease, background 0.2s ease;
-    }
-
-    tbody tr:hover {
-      transform: translateY(-2px);
-      background: rgba(15, 23, 42, 0.45);
-    }
-
+    tbody tr:nth-child(odd) { background-color: rgba(15,23,42,0.96); }
+    tbody tr:nth-child(even) { background-color: #020617; }
     td {
-      padding: 12px 0;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
-
-    td:last-child,
-    th:last-child {
-      text-align: right;
-    }
-
-    .change {
-      font-weight: 600;
-    }
-
-    .change.positive {
-      color: var(--positive);
-    }
-
-    .change.negative {
-      color: var(--negative);
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 999px;
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      padding: 6px 12px;
+      padding: 8px 9px;
+      border-bottom: 1px solid rgba(15,23,42,0.95);
+      white-space: normal;
+      word-break: break-word;
       font-size: 0.8rem;
-      letter-spacing: 0.04em;
-      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+    tbody tr {
+      cursor: pointer;
+      transition: background-color .12s ease, box-shadow .12s ease;
+    }
+    tbody tr:hover { background-color: rgba(30,64,175,0.5); }
+    tbody tr.editing {
+      box-shadow: inset 0 0 0 1px rgba(251,113,133,0.9);
+    }
+    tbody tr.next-row {
+      /* Mantém o realce verde sem mexer na estrutura da linha */
+      box-shadow:
+        inset 0 0 0 1px rgba(34,197,94,0.85),
+        inset 3px 0 0 #22c55e;
     }
 
-    .trend-indicator {
+    .col-name { width: 30%; font-weight: 600; }
+    .col-date { width: 18%; }
+    .col-time { width: 14%; }
+    .col-type { width: 18%; }
+    .col-duration { width: 10%; }
+    .col-money { width: 10%; }
+
+    .agenda-table {
+      width: 100%;
+      table-layout: fixed;
+    }
+    
+
+    td.col-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    td.col-date,
+    td.col-time,
+    td.col-duration,
+    td.col-money {
+      white-space: nowrap;
+    }
+
+    .col-left { text-align: left; }
+    .col-center { text-align: center; }
+    .col-right { text-align: right; }
+
+    .badge-type {
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid transparent;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      color: var(--muted);
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 12px;
-      padding: 8px 12px;
-    }
-
-    .sparkline {
-      display: inline-flex;
       gap: 4px;
-      align-items: flex-end;
-      height: 28px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      white-space: nowrap;
+    }
+    .badge-type-mao {
+      background: rgba(251,113,133,0.2);
+      border-color: rgba(251,113,133,0.8);
+    }
+    .badge-type-pe {
+      background: rgba(59,130,246,0.18);
+      border-color: rgba(59,130,246,0.9);
+    }
+    .badge-type-pe-e-mao {
+      background: rgba(56,189,248,0.16);
+      border-color: rgba(56,189,248,0.9);
     }
 
-    .sparkline span {
-      width: 3px;
-      border-radius: 999px 999px 0 0;
-      background: rgba(56, 189, 248, 0.55);
-      transition: height 0.3s ease;
+    .empty {
+      padding: 14px 12px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+      border-top: 1px solid rgba(15,23,42,0.9);
+      background: rgba(15,23,42,0.95);
     }
 
     footer {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
+      margin-top: 18px;
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--text-soft);
+    }
+    footer span { color: var(--primary-soft); }
+
+    .hint {
+      font-size: 0.72rem;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
+
+    .next-layout {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.85rem;
-      color: rgba(203, 213, 225, 0.75);
-      gap: 12px;
       flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .next-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .next-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-soft);
+    }
+    .next-name {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--text-strong);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .next-meta {
+      font-size: 0.76rem;
+      color: var(--text-soft);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .next-side {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .next-clock-label {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+    }
+    .next-clock-value {
+      font-size: 1.1rem;
+      font-weight: 650;
+    }
+    .next-countdown {
+      font-size: 0.72rem;
+      color: var(--primary-soft);
+    }
+    @media (max-width: 520px) {
+      .next-side { align-items: flex-start; text-align: left; }
     }
 
-    footer strong {
-      color: var(--accent-strong);
+    /* Tela de bloqueio (PIN) */
+    .lock-backdrop {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(15,23,42,0.98), rgba(15,23,42,1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+      padding: 16px;
     }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 24px 16px 40px;
-      }
-
-      header,
-      .panel {
-        padding: 20px;
-      }
-
-      thead {
-        display: none;
-      }
-
-      table,
-      tbody,
-      tr,
-      td {
-        display: block;
-        width: 100%;
-      }
-
-      tbody tr {
-        margin-bottom: 18px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-      }
-
-      td {
-        text-align: left !important;
-        padding: 8px 0;
-      }
-
-      td::before {
-        content: attr(data-label);
-        display: block;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--muted);
-        margin-bottom: 2px;
-      }
+    .lock-backdrop.hidden { display: none; }
+    .lock-card {
+      max-width: 360px;
+      width: 100%;
+      background: rgba(15,23,42,0.98);
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,0.5);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.85);
+      padding: 14px 14px 16px;
+      text-align: center;
+    }
+    .lock-icon { font-size: 1.8rem; margin-bottom: 4px; }
+    .lock-title { font-size: 0.98rem; font-weight: 600; margin-bottom: 4px; }
+    .lock-subtitle { font-size: 0.8rem; color: var(--text-soft); margin-bottom: 10px; }
+    .lock-input {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(15,23,42,0.9);
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.95), rgba(15,23,42,0.98));
+      padding: 9px 10px;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 0.3em;
+    }
+    .lock-input::placeholder { letter-spacing: 0; }
+    .lock-note {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1><span>📈</span> Mercado em Tempo Real</h1>
-    <div class="market-meta">
-      <div class="badge" id="market-status">Bolsa Aberta</div>
-      <div class="trend-indicator">
-        <span>Ibovespa Futuro</span>
-        <strong id="market-trend">+0,84%</strong>
+    <div class="header-inner">
+      <div class="header-title">
+        <div class="logo-row">
+          <div class="logo-dot"></div>
+          <h1>Agenda da Manicure • Pro</h1>
+        </div>
+        <div class="header-sub">
+          Controle completo de atendimentos diretamente no seu celular Android.
+        </div>
       </div>
-      <div>
-        Última atualização: <strong id="last-update">--:--:--</strong>
+      <div class="header-badges">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>100% offline</span>
+        </div>
+        <div class="badge">💾 Salva no aparelho</div>
       </div>
     </div>
   </header>
 
-  <main>
-    <section class="grid-panels">
-      <article class="panel">
-        <h2>Ações em Destaque <span>Principais ativos negociados</span></h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Ativo</th>
-              <th>Preço</th>
-              <th>Variação</th>
-              <th>Volume</th>
-            </tr>
-          </thead>
-          <tbody id="stocks-body"></tbody>
-        </table>
-      </article>
+  <main class="page">
+    <div class="tabs" aria-label="Navegação da agenda">
+      <button class="tab-btn active" data-tab="agendar" type="button">
+        <span class="tab-btn-icon">📝</span><span>Agendar</span>
+      </button>
+      <button class="tab-btn" data-tab="agenda" type="button">
+        <span class="tab-btn-icon">📅</span><span>Agendados</span>
+      </button>
+      <button class="tab-btn" data-tab="dashboard" type="button">
+        <span class="tab-btn-icon">📊</span><span>Resumo Período</span>
+      </button>
+    </div>
 
-      <article class="panel">
-        <h2>Fundos Imobiliários <span>Carteira recomendada</span></h2>
-        <table>
-          <thead>
-            <tr>
-              <th>FII</th>
-              <th>Cota</th>
-              <th>Variação</th>
-              <th>Dividend Yield</th>
-            </tr>
-          </thead>
-          <tbody id="fiis-body"></tbody>
-        </table>
-      </article>
+    <!-- ABA 1: AGENDAR -->
+    <section class="tab-content active" id="tab-agendar">
+      <section class="cards-grid">
+        <article class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  <span class="card-title-bar"></span>Próximo atendimento de hoje
+                </div>
+                <div class="card-subtitle">Baseado na hora atual do seu aparelho.</div>
+              </div>
+            </div>
+
+            <div class="next-layout">
+              <div class="next-main">
+                <div class="next-label">Cliente</div>
+                <div class="next-name" id="proxNome">Nenhum atendimento futuro hoje.</div>
+                <div class="next-meta">
+                  <span id="proxHora"></span>
+                  <span id="proxTipo"></span>
+                  <span id="proxValor"></span>
+                </div>
+              </div>
+              <div class="next-side">
+                <div class="next-clock-label">Agora</div>
+                <div class="next-clock-value" id="horaAtual">--:--</div>
+                <div class="next-countdown" id="proxCountdown"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  <span class="card-title-bar"></span><span id="formTitle">Novo atendimento</span>
+                </div>
+                <div class="card-subtitle">
+                  Toque em um atendimento na aba “Agendados” para editar ou excluir.
+                </div>
+              </div>
+            </div>
+
+            <div class="chips">
+              <span class="chip">Valores automáticos: Mão / Pé / Pé e Mão</span>
+              <span class="chip">Atendimentos pré-carregados para 11/12/2025</span>
+            </div>
+
+            <div class="form-grid" style="margin-top: 10px;">
+              <div class="field">
+                <label for="nome">Nome da cliente</label>
+                <input id="nome" type="text" placeholder="Ex.: Maria Elena" autocomplete="name" />
+              </div>
+
+              <div class="form-row-inline">
+                <div class="field">
+                  <label for="tipo">Tipo de serviço <span>(define duração e valor padrão)</span></label>
+                  <select id="tipo">
+                    <option value="">Selecione...</option>
+                    <option value="Mão">Mão (1h • R$30)</option>
+                    <option value="Pé">Pé (1h • R$30)</option>
+                    <option value="Pé e Mão">Pé e Mão (2h • R$60)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="data">Data</label>
+                  <input id="data" type="date" />
+                </div>
+              </div>
+
+              <div class="form-row-inline">
+                <div class="field">
+                  <label for="hora">Hora</label>
+                  <input id="hora" type="time" />
+                </div>
+                <div class="field">
+                  <label for="duracao">Duração</label>
+                  <input id="duracao" type="text" placeholder="Ex.: 01:00 (1h)" />
+                </div>
+              </div>
+
+              <div class="form-row-inline">
+                <div class="field">
+                  <label for="recorrencia">Recorrência</label>
+                  <select id="recorrencia">
+                    <option value="none">Sem recorrência</option>
+                    <option value="semanal">Semanal</option>
+                    <option value="quinzenal">Quinzenal</option>
+                    <option value="mensal">Mensal</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="recorrenciaQtd">Repetições <span>(inclui este)</span></label>
+                  <input id="recorrenciaQtd" type="number" min="1" max="52" value="1" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="valor">Valor (R$)</label>
+                <input id="valor" type="number" inputmode="decimal" step="0.01" placeholder="Ex.: 30,00" />
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-primary" id="salvarBtn">
+                <span class="btn-icon">💅</span><span id="salvarBtnLabel">Salvar atendimento</span>
+              </button>
+              <button class="btn btn-ghost" id="limparBtn">Limpar formulário</button>
+              <button class="btn btn-danger" id="excluirBtn" style="display:none;">
+                <span class="btn-icon">🗑</span>Excluir atendimento
+              </button>
+            </div>
+
+            <div class="hint">
+              Dica: mantenha o arquivo salvo na tela inicial do Android para abrir como se fosse um aplicativo.
+            </div>
+          </div>
+        </article>
+      </section>
     </section>
 
-    <section class="panel">
-      <h2>Heatmap intraday <span>Representação do movimento recente</span></h2>
-      <div id="heatmap" class="sparkline" aria-label="Mapa de calor dos ativos"></div>
+    <!-- ABA 2: AGENDADOS -->
+    <section class="tab-content" id="tab-agenda">
+      <section class="cards-grid">
+        <article class="card">
+          <div class="card-inner">
+            <div class="card-header">
+              <div>
+                <div class="card-title">
+                  <span class="card-title-bar"></span>Resumo do dia
+                </div>
+                <div class="card-subtitle">Resumo sempre baseado na data selecionada.</div>
+              </div>
+            </div>
+
+            <div class="field" style="margin-bottom: 4px;">
+              <label for="filtroData">Data da agenda</label>
+              <input id="filtroData" type="date" />
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-label">Serviços</div>
+                <div class="summary-value" id="totalServicos">0</div>
+                <div class="summary-extra">Atendimentos agendados</div>
+              </div>
+              <div class="summary-card" id="cardHoras">
+                <div class="summary-label">Horas</div>
+                <div class="summary-value warning" id="totalHoras">0h</div>
+                <div class="summary-extra" id="totalHorasExtra">Tempo total de trabalho</div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-label">Faturamento</div>
+                <div class="summary-value positive" id="totalValor">R$ 0,00</div>
+                <div class="summary-extra">Somente nesta data</div>
+              </div>
+            </div>
+
+            <div class="summary-pill-row">
+              <span class="summary-pill" id="pillPrimeiroHorario">Primeiro horário: -</span>
+              <span class="summary-pill" id="pillUltimoHorario">Último horário: -</span>
+            </div>
+
+            <div class="btn-row" style="margin-top: 10px;">
+              <button class="btn btn-ghost btn-small" id="limparFiltroBtn">Limpar data</button>
+              <button class="btn btn-ghost btn-small" id="exportarBtn">📄 Exportar CSV</button>
+              <button class="btn btn-ghost btn-small" id="compartilharBtn">📲 Compartilhar dia</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <span class="card-title-bar"></span>Agenda completa
+              </div>
+              <div class="card-subtitle">
+                Toque em uma linha para carregar no formulário de edição (aba “Agendar”).
+              </div>
+            </div>
+          </div>
+
+          <div class="filters-row">
+            <div class="field" style="margin:0;">
+              <label for="filtroDataAgenda">Data da agenda</label>
+              <input id="filtroDataAgenda" type="date" />
+            </div>
+            <span class="hint" style="margin-top:0;">
+              Resumo e tabela usam esta mesma data.
+            </span>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table class="agenda-table">
+                <colgroup>
+                  <col class="col-name" />
+                  <col class="col-date" />
+                  <col class="col-time" />
+                  <col class="col-type" />
+                  <col class="col-duration" />
+                  <col class="col-money" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th class="col-name col-left">Nome</th>
+                    <th class="col-date col-center">Data</th>
+                    <th class="col-time col-center">Hora</th>
+                    <th class="col-type col-center">Tipo</th>
+                    <th class="col-duration col-center">Duração</th>
+                    <th class="col-money col-right">Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="lista"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="vazio" style="display:none;">
+              Nenhum atendimento para a data selecionada.
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
+
+    <!-- ABA 3: DASHBOARD PERÍODO -->
+    <section class="tab-content" id="tab-dashboard">
+      <section class="card">
+        <div class="card-inner">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <span class="card-title-bar"></span>Resumo por período
+              </div>
+              <div class="card-subtitle">
+                Ganho total e carga de trabalho por mês, trimestre, semestre ou ano.
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row-inline" style="margin-bottom: 4px;">
+            <div class="field">
+              <label for="filtroMes">Mês de referência</label>
+              <input id="filtroMes" type="month" />
+            </div>
+            <div class="field">
+              <label for="tipoPeriodoMes">Período</label>
+              <select id="tipoPeriodoMes">
+                <option value="1">Mês</option>
+                <option value="3">Trimestre</option>
+                <option value="6">Semestre</option>
+                <option value="12">Ano</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-label">Serviços no período</div>
+              <div class="summary-value" id="totalServicosMes">0</div>
+              <div class="summary-extra">Quantidade total de atendimentos</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Horas no período</div>
+              <div class="summary-value warning" id="totalHorasMes">0h</div>
+              <div class="summary-extra">Tempo total estimado</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Faturamento no período</div>
+              <div class="summary-value positive" id="totalValorMes">R$ 0,00</div>
+              <div class="summary-extra">Somando todos os dias</div>
+            </div>
+          </div>
+
+          <div class="table-wrapper" style="margin-top: 10px;">
+            <div class="table-scroll">
+              <table class="agenda-table">
+                <colgroup>
+                  <col class="col-name" />
+                  <col class="col-date" />
+                  <col class="col-time" />
+                  <col class="col-type" />
+                  <col class="col-duration" />
+                  <col class="col-money" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th class="col-center">Serviços</th>
+                    <th class="col-center">Horas</th>
+                    <th class="col-money col-right">Faturamento</th>
+                  </tr>
+                </thead>
+                <tbody id="listaMes"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="vazioMes" style="display:none;">
+              Nenhum atendimento neste período.
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer>
+      Agenda projetada para uso intenso no <span>Android</span>, rodando 100% local, sem servidor.
+    </footer>
   </main>
 
-  <footer>
-    <div>
-      Dados simulados para fins educacionais. Valores atualizados automaticamente a cada 5 segundos.
+  <!-- Tela de bloqueio (PIN) -->
+  <div class="lock-backdrop" id="lockBackdrop">
+    <div class="lock-card">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">Proteção de acesso</div>
+      <div class="lock-subtitle" id="lockSubtitle">
+        Defina um PIN numérico para proteger sua agenda.
+      </div>
+      <input type="password" id="lockPin" class="lock-input" inputmode="numeric" maxlength="6" placeholder="PIN numérico" />
+      <div class="lock-note">
+        Em um app Android nativo a biometria (digital/rosto) poderia ser usada aqui.
+        Como este arquivo roda direto no navegador, usamos um PIN salvo apenas neste dispositivo.
+      </div>
+      <div class="btn-row" style="margin-top:10px; justify-content:center;">
+        <button class="btn btn-primary btn-small" id="lockConfirmBtn">Criar PIN e entrar</button>
+        <button class="btn btn-ghost btn-small" id="lockResetBtn" style="display:none;">Redefinir PIN</button>
+      </div>
     </div>
-    <div>
-      Tendência do dia: <strong id="day-trend">Alta moderada</strong>
-    </div>
-  </footer>
+  </div>
+
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toastIcon">✔</span>
+    <span id="toastText">Mensagem</span>
+  </div>
 
   <script>
-    const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-    });
-
-    const percentFormatter = new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-    const stocks = [
-      { ticker: 'PETR4', name: 'Petrobras PN', price: 36.72, prevPrice: 36.72, volume: 1_450_000, volatility: 0.018 },
-      { ticker: 'VALE3', name: 'Vale ON', price: 67.45, prevPrice: 67.45, volume: 980_500, volatility: 0.016 },
-      { ticker: 'ITUB4', name: 'Itaú Unibanco PN', price: 28.32, prevPrice: 28.32, volume: 1_120_000, volatility: 0.012 },
-      { ticker: 'BBDC4', name: 'Bradesco PN', price: 14.18, prevPrice: 14.18, volume: 880_300, volatility: 0.011 },
-      { ticker: 'WEGE3', name: 'Weg ON', price: 37.92, prevPrice: 37.92, volume: 650_400, volatility: 0.014 },
-      { ticker: 'ABEV3', name: 'Ambev ON', price: 14.75, prevPrice: 14.75, volume: 790_250, volatility: 0.013 }
-    ];
-
-    const fiis = [
-      { ticker: 'HGLG11', name: 'CSHG Logística', price: 169.85, prevPrice: 169.85, dividendYield: 0.78, volatility: 0.008 },
-      { ticker: 'MXRF11', name: 'Maxi Renda', price: 11.36, prevPrice: 11.36, dividendYield: 0.92, volatility: 0.009 },
-      { ticker: 'VISC11', name: 'Vinci Shopping', price: 107.42, prevPrice: 107.42, dividendYield: 0.74, volatility: 0.007 },
-      { ticker: 'KNRI11', name: 'Kinea Renda Imobiliária', price: 151.60, prevPrice: 151.60, dividendYield: 0.71, volatility: 0.006 },
-      { ticker: 'XPLG11', name: 'XP Log', price: 110.12, prevPrice: 110.12, dividendYield: 0.69, volatility: 0.007 },
-      { ticker: 'BTLG11', name: 'BTG Logística', price: 114.75, prevPrice: 114.75, dividendYield: 0.73, volatility: 0.007 }
-    ];
-
-    const renderRow = (item, type) => {
-      const change = ((item.price - item.prevPrice) / item.prevPrice) * 100 || 0;
-      const changeClass = change >= 0 ? 'positive' : 'negative';
-      const changeLabel = `${change >= 0 ? '+' : ''}${percentFormatter.format(change)}%`;
-
-      if (type === 'stock') {
-        return `
-          <tr data-ticker="${item.ticker}">
-            <td data-label="Ativo">
-              <strong>${item.ticker}</strong><br />
-              <small style="color: var(--muted); font-size: 0.8rem;">${item.name}</small>
-            </td>
-            <td data-label="Preço">${currencyFormatter.format(item.price)}</td>
-            <td data-label="Variação"><span class="change ${changeClass}">${changeLabel}</span></td>
-            <td data-label="Volume">${item.volume.toLocaleString('pt-BR')}</td>
-          </tr>
-        `;
-      }
-
-      return `
-        <tr data-ticker="${item.ticker}">
-          <td data-label="FII">
-            <strong>${item.ticker}</strong><br />
-            <small style="color: var(--muted); font-size: 0.8rem;">${item.name}</small>
-          </td>
-          <td data-label="Cota">${currencyFormatter.format(item.price)}</td>
-          <td data-label="Variação"><span class="change ${changeClass}">${changeLabel}</span></td>
-          <td data-label="Dividend Yield">${percentFormatter.format(item.dividendYield)}%</td>
-        </tr>
-      `;
+    const PADROES_SERVICO = {
+      "Mão":      { duracao: "01:00", valor: 30.00 },
+      "Pé":       { duracao: "01:00", valor: 30.00 },
+      "Pé e Mão": { duracao: "02:00", valor: 60.00 }
     };
 
-    function renderTables() {
-      document.getElementById('stocks-body').innerHTML = stocks.map((item) => renderRow(item, 'stock')).join('');
-      document.getElementById('fiis-body').innerHTML = fiis.map((item) => renderRow(item, 'fii')).join('');
+    const STORAGE_KEY = "agenda_manicure_pro_final";
+    const LOCK_KEY = "agenda_manicure_pro_lock_pin";
+
+    const DEFAULT_ATENDIMENTOS = [
+      { id: "seed-1", nome: "Maria Elena", data: "2025-12-11", hora: "08:00", tipo: "Pé",       duracao: "01:00", valor: 30.00 },
+      { id: "seed-2", nome: "Geovana",     data: "2025-12-11", hora: "09:00", tipo: "Mão",      duracao: "01:00", valor: 30.00 },
+      { id: "seed-3", nome: "Gabrielle",   data: "2025-12-11", hora: "10:00", tipo: "Pé e Mão", duracao: "02:00", valor: 60.00 },
+      { id: "seed-4", nome: "Ana Laura",   data: "2025-12-11", hora: "12:00", tipo: "Mão",      duracao: "01:00", valor: 30.00 }
+    ];
+
+    let atendimentos = [];
+    let editingId = null;
+    let proximoId = null;
+
+    const el = {
+      tabButtons: document.querySelectorAll(".tab-btn"),
+
+      nome: document.getElementById("nome"),
+      tipo: document.getElementById("tipo"),
+      data: document.getElementById("data"),
+      hora: document.getElementById("hora"),
+      duracao: document.getElementById("duracao"),
+      valor: document.getElementById("valor"),
+      recorrencia: document.getElementById("recorrencia"),
+      recorrenciaQtd: document.getElementById("recorrenciaQtd"),
+
+      salvarBtn: document.getElementById("salvarBtn"),
+      salvarBtnLabel: document.getElementById("salvarBtnLabel"),
+      limparBtn: document.getElementById("limparBtn"),
+      excluirBtn: document.getElementById("excluirBtn"),
+      formTitle: document.getElementById("formTitle"),
+
+      filtroData: document.getElementById("filtroData"),
+      filtroDataAgenda: document.getElementById("filtroDataAgenda"),
+      limparFiltroBtn: document.getElementById("limparFiltroBtn"),
+      exportarBtn: document.getElementById("exportarBtn"),
+      compartilharBtn: document.getElementById("compartilharBtn"),
+
+      lista: document.getElementById("lista"),
+      vazio: document.getElementById("vazio"),
+
+      totalServicos: document.getElementById("totalServicos"),
+      totalHoras: document.getElementById("totalHoras"),
+      totalHorasExtra: document.getElementById("totalHorasExtra"),
+      totalValor: document.getElementById("totalValor"),
+      pillPrimeiroHorario: document.getElementById("pillPrimeiroHorario"),
+      pillUltimoHorario: document.getElementById("pillUltimoHorario"),
+      cardHoras: document.getElementById("cardHoras"),
+
+      proxNome: document.getElementById("proxNome"),
+      proxHora: document.getElementById("proxHora"),
+      proxTipo: document.getElementById("proxTipo"),
+      proxValor: document.getElementById("proxValor"),
+      proxCountdown: document.getElementById("proxCountdown"),
+      horaAtual: document.getElementById("horaAtual"),
+
+      filtroMes: document.getElementById("filtroMes"),
+      tipoPeriodoMes: document.getElementById("tipoPeriodoMes"),
+      totalServicosMes: document.getElementById("totalServicosMes"),
+      totalHorasMes: document.getElementById("totalHorasMes"),
+      totalValorMes: document.getElementById("totalValorMes"),
+      listaMes: document.getElementById("listaMes"),
+      vazioMes: document.getElementById("vazioMes"),
+
+      toast: document.getElementById("toast"),
+      toastText: document.getElementById("toastText"),
+      toastIcon: document.getElementById("toastIcon"),
+
+      lockBackdrop: document.getElementById("lockBackdrop"),
+      lockSubtitle: document.getElementById("lockSubtitle"),
+      lockPin: document.getElementById("lockPin"),
+      lockConfirmBtn: document.getElementById("lockConfirmBtn"),
+      lockResetBtn: document.getElementById("lockResetBtn")
+    };
+
+    function hojeISO() {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+    function fmtData(iso) {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return `${d}/${m}/${y}`;
+    }
+    
+    function fmtValor(num) {
+      if (num == null || num === "") return "";
+      // Se vier string (ex.: "60", "60,00", "R$ 60,00"), tenta converter
+      if (typeof num === "string") {
+        const parsed = parseValorInput(num);
+        if (parsed == null) return "";
+        num = parsed;
+      }
+      if (isNaN(num)) return "";
+      return "R$ " + Number(num).toFixed(2).replace(".", ",");
     }
 
-    function updateInstrument(instrument, type) {
-      const drift = (Math.random() * 2 - 1) * instrument.volatility;
-      const newPrice = Math.max(instrument.price * (1 + drift), 0.01);
-      instrument.prevPrice = instrument.price;
-      instrument.price = parseFloat(newPrice.toFixed(2));
+    function parseValorInput(str) {
+      if (str == null || str === "") return null;
+      let s = String(str).trim();
+      s = s.replace(/R\$\s*/i, "");
+      if (s.indexOf(",") >= 0 && s.indexOf(".") === -1) {
+        s = s.replace(/\./g, "").replace(",", ".");
+      } else if (s.indexOf(",") >= 0 && s.indexOf(".") >= 0) {
+        s = s.replace(/\./g, "").replace(",", ".");
+      }
+      const v = parseFloat(s);
+      return isNaN(v) ? null : v;
+    }
+    function gerarId() {
+      return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+    }
+    function duracaoParaMinutos(d) {
+      if (!d) return 0;
+      d = d.trim();
+      if (d.includes(":")) {
+        const [h, m] = d.split(":").map(n => parseInt(n, 10) || 0);
+        return h * 60 + m;
+      }
+      const numeros = d.replace(/[^\d]/g, "");
+      if (!numeros) return 0;
+      const h = parseInt(numeros, 10);
+      return h * 60;
+    }
+    function minutosParaTexto(total) {
+      const h = Math.floor(total / 60);
+      const m = total % 60;
+      if (total === 0) return "0h";
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}min`;
+    }
+    function addDaysToISO(iso, days) {
+      if (!iso) return iso;
+      const [y, m, d] = iso.split("-").map(Number);
+      const date = new Date(y, m - 1, d);
+      date.setDate(date.getDate() + days);
+      const ny = date.getFullYear();
+      const nm = String(date.getMonth() + 1).padStart(2, "0");
+      const nd = String(date.getDate()).padStart(2, "0");
+      return `${ny}-${nm}-${nd}`;
+    }
+    function addMonthsToISO(iso, months) {
+      if (!iso) return iso;
+      const [y, m, d] = iso.split("-").map(Number);
+      const date = new Date(y, m - 1, d);
+      date.setMonth(date.getMonth() + months);
+      const ny = date.getFullYear();
+      const nm = String(date.getMonth() + 1).padStart(2, "0");
+      const nd = String(date.getDate()).padStart(2, "0");
+      return `${ny}-${nm}-${nd}`;
+    }
+    function horaParaMinutos(h) {
+      if (!h) return 0;
+      const [hh, mm] = h.split(":").map(n => parseInt(n, 10) || 0);
+      return hh * 60 + mm;
+    }
+    function existeConflitoHorario(data, hora, duracao, ignorarId = null) {
+      const inicio = horaParaMinutos(hora);
+      const dur = duracaoParaMinutos(duracao);
+      const fim = inicio + dur;
+      return atendimentos.some(a => {
+        if (a.data !== data) return false;
+        if (ignorarId && a.id === ignorarId) return false;
+        if (!a.hora) return false;
+        const ini2 = horaParaMinutos(a.hora);
+        const dur2 = duracaoParaMinutos(a.duracao);
+        const fim2 = ini2 + dur2;
+        return inicio < fim2 && fim > ini2;
+      });
+    }
 
-      if (type === 'stock') {
-        const extraVolume = Math.round((Math.random() * 0.08 + 0.02) * instrument.volume);
-        instrument.volume += extraVolume;
+    function mostrarToast(msg, tipo = "ok") {
+      el.toastText.textContent = msg;
+      el.toast.classList.remove("toast-success", "toast-error");
+      if (tipo === "error") {
+        el.toastIcon.textContent = "⚠";
+        el.toast.classList.add("toast-error");
       } else {
-        const variation = (Math.random() * 0.06 - 0.02);
-        instrument.dividendYield = Math.max(0.4, Math.min(instrument.dividendYield + variation, 1.25));
+        el.toastIcon.textContent = "✔";
+        el.toast.classList.add("toast-success");
+      }
+      el.toast.classList.add("show");
+      setTimeout(() => el.toast.classList.remove("show"), 2600);
+    }
+
+    function salvarLocal() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(atendimentos)); }
+      catch (e) { console.warn("Erro ao salvar:", e); }
+    }
+    function carregarLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) atendimentos = JSON.parse(raw);
+        else {
+          atendimentos = DEFAULT_ATENDIMENTOS.map(a => ({ ...a }));
+          salvarLocal();
+        }
+      } catch (e) {
+        console.warn("Erro ao carregar:", e);
+        atendimentos = DEFAULT_ATENDIMENTOS.map(a => ({ ...a }));
+        salvarLocal();
       }
     }
 
-    function refreshUI() {
-      stocks.forEach((stock) => updateInstrument(stock, 'stock'));
-      fiis.forEach((fii) => updateInstrument(fii, 'fii'));
-      renderTables();
-      updateHeatmap();
-      updateTimestamps();
-      updateTrend();
+    function obterProximoAtendimentoHoje() {
+      const hoje = hojeISO();
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      const horaAtual = `${hh}:${mm}`;
+
+      const futuros = atendimentos
+        .filter(a => a.data === hoje && a.hora)
+        .filter(a => a.hora >= horaAtual)
+        .sort((a, b) => a.hora.localeCompare(b.hora));
+
+      return { agora: horaAtual, proximo: futuros[0] || null };
     }
-
-    function updateHeatmap() {
-      const heatmap = document.getElementById('heatmap');
-      const combined = [...stocks, ...fiis];
-      heatmap.innerHTML = combined
-        .map((item) => {
-          const change = ((item.price - item.prevPrice) / item.prevPrice) * 100 || 0;
-          const height = Math.min(28, Math.max(6, 14 + change * 1.2));
-          const color = change >= 0
-            ? `linear-gradient(180deg, rgba(34,197,94,0.75), rgba(22,163,74,0.35))`
-            : `linear-gradient(180deg, rgba(248,113,113,0.75), rgba(239,68,68,0.4))`;
-          return `<span title="${item.ticker}: ${change >= 0 ? '+' : ''}${percentFormatter.format(change)}%" style="height:${height}px;background:${color}"></span>`;
-        })
-        .join('');
+    function diferencaMinutos(hora1, hora2) {
+      const [h1, m1] = hora1.split(":").map(n => parseInt(n, 10) || 0);
+      const [h2, m2] = hora2.split(":").map(n => parseInt(n, 10) || 0);
+      return (h2 * 60 + m2) - (h1 * 60 + m1);
     }
-
-    function updateTimestamps() {
-      const now = new Date();
-      const formatted = now.toLocaleTimeString('pt-BR', { hour12: false });
-      document.getElementById('last-update').textContent = formatted;
-    }
-
-    function updateTrend() {
-      const aggregated = [...stocks, ...fiis]
-        .map((item) => (item.price - item.prevPrice) / item.prevPrice);
-      const avgChange = aggregated.reduce((acc, value) => acc + value, 0) / aggregated.length;
-      const trendElement = document.getElementById('market-trend');
-      const statusElement = document.getElementById('day-trend');
-
-      const percentChange = avgChange * 100;
-      trendElement.textContent = `${percentChange >= 0 ? '+' : ''}${percentFormatter.format(percentChange)}%`;
-
-      if (percentChange > 0.6) {
-        statusElement.textContent = 'Alta forte';
-      } else if (percentChange > 0.2) {
-        statusElement.textContent = 'Alta moderada';
-      } else if (percentChange > -0.2) {
-        statusElement.textContent = 'Estabilidade';
-      } else if (percentChange > -0.6) {
-        statusElement.textContent = 'Baixa leve';
+    function atualizarProximoAtendimento() {
+      const info = obterProximoAtendimentoHoje();
+      el.horaAtual.textContent = info.agora;
+      if (info.proximo) {
+        const a = info.proximo;
+        proximoId = a.id;
+        el.proxNome.textContent = a.nome;
+        el.proxHora.textContent = a.hora;
+        el.proxTipo.textContent = a.tipo;
+        el.proxValor.textContent = fmtValor(a.valor);
+        const diff = diferencaMinutos(info.agora, a.hora);
+        el.proxCountdown.textContent = diff > 0 ? `em ${diff} min` : "agora";
       } else {
-        statusElement.textContent = 'Baixa acentuada';
+        proximoId = null;
+        el.proxNome.textContent = "Nenhum atendimento futuro hoje.";
+        el.proxHora.textContent = "";
+        el.proxTipo.textContent = "";
+        el.proxValor.textContent = "";
+        el.proxCountdown.textContent = "";
       }
     }
 
-    renderTables();
-    updateHeatmap();
-    updateTimestamps();
-    updateTrend();
+    function obterFiltradosDia() {
+      const dataFiltro = el.filtroData.value;
+      return atendimentos
+        .filter(a => !dataFiltro || a.data === dataFiltro)
+        .sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
+    }
 
-    setInterval(refreshUI, 5000);
+    function atualizarResumoDia(dados) {
+      const totalServicos = dados.length;
+      let totalMin = 0;
+      let totalValor = 0;
+      let primeiro = null;
+      let ultimo = null;
+
+      dados.forEach(a => {
+        totalMin += duracaoParaMinutos(a.duracao);
+        totalValor += a.valor || 0;
+        if (!primeiro || (a.hora && a.hora < primeiro)) primeiro = a.hora;
+        if (!ultimo || (a.hora && a.hora > ultimo)) ultimo = a.hora;
+      });
+
+      el.totalServicos.textContent = totalServicos;
+      el.totalHoras.textContent = minutosParaTexto(totalMin);
+      el.totalValor.textContent = fmtValor(totalValor);
+
+      el.pillPrimeiroHorario.textContent = primeiro ? `Primeiro horário: ${primeiro}` : "Primeiro horário: -";
+      el.pillUltimoHorario.textContent = ultimo ? `Último horário: ${ultimo}` : "Último horário: -";
+
+      if (totalMin >= 8 * 60) {
+        el.cardHoras.classList.add("summary-card-busy");
+        el.totalHoras.classList.add("danger");
+        el.totalHorasExtra.textContent = "Agenda cheia hoje";
+      } else if (totalMin >= 6 * 60) {
+        el.cardHoras.classList.remove("summary-card-busy");
+        el.totalHoras.classList.remove("danger");
+        el.totalHorasExtra.textContent = "Dia bem cheio, avalie pausas.";
+      } else {
+        el.cardHoras.classList.remove("summary-card-busy");
+        el.totalHoras.classList.remove("danger");
+        el.totalHorasExtra.textContent = "Tempo total de trabalho";
+      }
+    }
+
+    function renderTabela() {
+      const dados = obterFiltradosDia();
+      el.lista.innerHTML = "";
+      el.vazio.style.display = dados.length ? "none" : "block";
+
+      dados.forEach(a => {
+        const tr = document.createElement("tr");
+        if (editingId && editingId === a.id) tr.classList.add("editing");
+        if (proximoId && proximoId === a.id) tr.classList.add("next-row");
+
+        const tdNome = document.createElement("td");
+        tdNome.className = "col-name col-left";
+        tdNome.textContent = a.nome;
+
+        const tdData = document.createElement("td");
+        tdData.className = "col-date col-center";
+        tdData.textContent = fmtData(a.data);
+
+        const tdHora = document.createElement("td");
+        tdHora.className = "col-time col-center";
+        tdHora.textContent = a.hora || "";
+
+        const tdTipo = document.createElement("td");
+        tdTipo.className = "col-type col-center";
+        const spanTipo = document.createElement("span");
+        spanTipo.textContent = a.tipo;
+        spanTipo.classList.add("badge-type");
+        if (a.tipo === "Mão") spanTipo.classList.add("badge-type-mao");
+        else if (a.tipo === "Pé") spanTipo.classList.add("badge-type-pe");
+        else spanTipo.classList.add("badge-type-pe-e-mao");
+        tdTipo.appendChild(spanTipo);
+
+        const tdDuracao = document.createElement("td");
+        tdDuracao.className = "col-duration col-center";
+        tdDuracao.textContent = a.duracao || "";
+
+        const tdValor = document.createElement("td");
+        tdValor.className = "col-money col-right";
+        tdValor.textContent = fmtValor(a.valor);
+
+        tr.appendChild(tdNome);
+        tr.appendChild(tdData);
+        tr.appendChild(tdHora);
+        tr.appendChild(tdTipo);
+        tr.appendChild(tdDuracao);
+        tr.appendChild(tdValor);
+
+        tr.dataset.id = a.id;
+        tr.addEventListener("click", () => {
+          carregarParaEdicao(a.id);
+          ativarAba("agendar");
+        });
+
+        el.lista.appendChild(tr);
+      });
+
+      atualizarResumoDia(dados);
+    }
+
+    function obterResumoPeriodo() {
+      let mes = el.filtroMes ? el.filtroMes.value : "";
+      if (!mes) {
+        if (atendimentos.length && atendimentos[0].data) mes = atendimentos[0].data.slice(0, 7);
+        else mes = hojeISO().slice(0, 7);
+        if (el.filtroMes) el.filtroMes.value = mes;
+      }
+      if (!mes) return { dias: [], totalServicos: 0, totalMin: 0, totalValor: 0 };
+
+      const [anoStr, mesStr] = mes.split("-");
+      const ano = parseInt(anoStr, 10);
+      const mesNum = parseInt(mesStr, 10);
+      if (!ano || !mesNum) return { dias: [], totalServicos: 0, totalMin: 0, totalValor: 0 };
+
+      const span = el.tipoPeriodoMes ? parseInt(el.tipoPeriodoMes.value, 10) || 1 : 1;
+      const inicio = new Date(ano, mesNum - 1, 1);
+      const fim = new Date(ano, mesNum - 1 + span, 1);
+
+      const mapa = {};
+      atendimentos.forEach(a => {
+        if (!a.data) return;
+        const [ay, am, ad] = a.data.split("-").map(Number);
+        const dataObj = new Date(ay, am - 1, ad);
+        if (dataObj < inicio || dataObj >= fim) return;
+
+        if (!mapa[a.data]) mapa[a.data] = { data: a.data, totalServicos: 0, totalMin: 0, totalValor: 0 };
+        mapa[a.data].totalServicos += 1;
+        mapa[a.data].totalMin += duracaoParaMinutos(a.duracao);
+        mapa[a.data].totalValor += a.valor || 0;
+      });
+
+      const dias = Object.values(mapa).sort((a, b) => a.data.localeCompare(b.data));
+      let totalServicos = 0, totalMin = 0, totalValor = 0;
+      dias.forEach(d => {
+        totalServicos += d.totalServicos;
+        totalMin += d.totalMin;
+        totalValor += d.totalValor;
+      });
+      return { dias, totalServicos, totalMin, totalValor };
+    }
+
+    function atualizarResumoMes() {
+      const { dias, totalServicos, totalMin, totalValor } = obterResumoPeriodo();
+      el.totalServicosMes.textContent = totalServicos;
+      el.totalHorasMes.textContent = minutosParaTexto(totalMin);
+      el.totalValorMes.textContent = fmtValor(totalValor);
+
+      el.listaMes.innerHTML = "";
+      if (!dias.length) {
+        el.vazioMes.style.display = "block";
+        return;
+      }
+      el.vazioMes.style.display = "none";
+
+      dias.forEach(d => {
+        const tr = document.createElement("tr");
+
+        const tdData = document.createElement("td");
+        tdData.textContent = fmtData(d.data);
+
+        const tdServ = document.createElement("td");
+        tdServ.className = "col-center";
+        tdServ.textContent = d.totalServicos;
+
+        const tdHoras = document.createElement("td");
+        tdHoras.className = "col-center";
+        tdHoras.textContent = minutosParaTexto(d.totalMin);
+
+        const tdVal = document.createElement("td");
+        tdVal.className = "col-money col-right";
+        tdVal.textContent = fmtValor(d.totalValor);
+
+        tr.appendChild(tdData);
+        tr.appendChild(tdServ);
+        tr.appendChild(tdHoras);
+        tr.appendChild(tdVal);
+
+        el.listaMes.appendChild(tr);
+      });
+    }
+
+    function limparFormulario() {
+      el.nome.value = "";
+      el.tipo.value = "";
+      el.data.value = el.filtroData.value || hojeISO();
+      el.hora.value = "";
+      el.duracao.value = "";
+      el.valor.value = "";
+      if (el.recorrencia) el.recorrencia.value = "none";
+      if (el.recorrenciaQtd) el.recorrenciaQtd.value = "1";
+      editingId = null;
+      el.excluirBtn.style.display = "none";
+      el.salvarBtnLabel.textContent = "Salvar atendimento";
+      el.formTitle.textContent = "Novo atendimento";
+      renderTabela();
+    }
+
+    function carregarParaEdicao(id) {
+      const registro = atendimentos.find(a => a.id === id);
+      if (!registro) return;
+
+      editingId = id;
+      el.nome.value = registro.nome;
+      el.tipo.value = registro.tipo;
+      el.data.value = registro.data;
+      el.hora.value = registro.hora;
+      el.duracao.value = registro.duracao;
+      el.valor.value = registro.valor != null ? registro.valor.toFixed(2) : "";
+      if (el.recorrencia) el.recorrencia.value = "none";
+      if (el.recorrenciaQtd) el.recorrenciaQtd.value = "1";
+
+      el.excluirBtn.style.display = "inline-flex";
+      el.salvarBtnLabel.textContent = "Salvar alterações";
+      el.formTitle.textContent = "Editando atendimento";
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      renderTabela();
+    }
+
+    function salvarAtendimento() {
+      const nome = el.nome.value.trim();
+      const tipo = el.tipo.value.trim();
+      const data = el.data.value;
+      const hora = el.hora.value;
+      let duracao = el.duracao.value.trim();
+      let valor = parseValorInput(el.valor.value);
+
+      if (!nome || !tipo || !data || !hora) {
+        mostrarToast("Preencha Nome, Tipo, Data e Hora.", "error");
+        return;
+      }
+
+      const padrao = PADROES_SERVICO[tipo];
+      if (!duracao) {
+        duracao = padrao ? padrao.duracao : "01:00";
+        el.duracao.value = duracao;
+      }
+      if (valor == null) {
+        valor = padrao ? padrao.valor : 0;
+        el.valor.value = valor.toFixed(2);
+      }
+
+      const tipoRec = el.recorrencia ? el.recorrencia.value : "none";
+      let qtdRec = el.recorrenciaQtd ? parseInt(el.recorrenciaQtd.value, 10) || 1 : 1;
+      if (qtdRec < 1) qtdRec = 1;
+      if (qtdRec > 52) qtdRec = 52;
+
+      if (editingId) {
+        if (existeConflitoHorario(data, hora, duracao, editingId)) {
+          mostrarToast("Conflito de horário com outro atendimento.", "error");
+          return;
+        }
+        const registro = { id: editingId, nome, tipo, data, hora, duracao, valor };
+        const idx = atendimentos.findIndex(a => a.id === editingId);
+        if (idx >= 0) atendimentos[idx] = registro;
+        mostrarToast("Atendimento atualizado com sucesso!");
+      } else {
+        if (tipoRec === "none" || qtdRec === 1) {
+          if (existeConflitoHorario(data, hora, duracao, null)) {
+            mostrarToast("Já existe atendimento neste intervalo de horário.", "error");
+            return;
+          }
+          const registro = { id: gerarId(), nome, tipo, data, hora, duracao, valor };
+          atendimentos.push(registro);
+          mostrarToast("Atendimento cadastrado com sucesso!");
+        } else {
+          const novos = [];
+          for (let i = 0; i < qtdRec; i++) {
+            let novaData = data;
+            if (i > 0) {
+              if (tipoRec === "semanal") novaData = addDaysToISO(data, 7 * i);
+              else if (tipoRec === "quinzenal") novaData = addDaysToISO(data, 14 * i);
+              else if (tipoRec === "mensal") novaData = addMonthsToISO(data, i);
+            }
+            if (existeConflitoHorario(novaData, hora, duracao, null)) {
+              mostrarToast("Conflito em " + fmtData(novaData) + " às " + hora + ". Ajuste o horário ou reduza as repetições.", "error");
+              return;
+            }
+            novos.push({ id: gerarId(), nome, tipo, data: novaData, hora, duracao, valor });
+          }
+          atendimentos.push(...novos);
+          mostrarToast(novos.length + " atendimentos recorrentes criados.");
+        }
+      }
+
+      salvarLocal();
+      atualizarProximoAtendimento();
+      atualizarResumoMes();
+
+      if (el.recorrencia) el.recorrencia.value = "none";
+      if (el.recorrenciaQtd) el.recorrenciaQtd.value = "1";
+
+      editingId = null;
+      el.excluirBtn.style.display = "none";
+      el.salvarBtnLabel.textContent = "Salvar atendimento";
+      el.formTitle.textContent = "Novo atendimento";
+      limparFormulario();
+      renderTabela();
+    }
+
+    function excluirAtendimento() {
+      if (!editingId) return;
+      const ok = confirm("Deseja realmente excluir este atendimento?");
+      if (!ok) return;
+      atendimentos = atendimentos.filter(a => a.id !== editingId);
+      salvarLocal();
+      atualizarProximoAtendimento();
+      atualizarResumoMes();
+      mostrarToast("Atendimento excluído.");
+      limparFormulario();
+      renderTabela();
+    }
+
+    function exportarCSV() {
+      const dados = obterFiltradosDia();
+      if (!dados.length) {
+        mostrarToast("Nada para exportar com a data atual.", "error");
+        return;
+      }
+      const linhas = [["Nome", "Data", "Hora", "Tipo", "Duração", "Valor (R$)"]];
+      dados.forEach(a => {
+        linhas.push([
+          a.nome,
+          fmtData(a.data),
+          a.hora,
+          a.tipo,
+          a.duracao,
+          (a.valor || 0).toFixed(2).replace(".", ",")
+        ]);
+      });
+      const conteudo = linhas.map(l => l.join(";")).join("\n");
+      const blob = new Blob([conteudo], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "agenda_manicure.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function compartilharAgenda() {
+      const dados = obterFiltradosDia();
+      if (!dados.length) {
+        mostrarToast("Nenhum atendimento para compartilhar nesta data.", "error");
+        return;
+      }
+      const dataStr = el.filtroData.value ? fmtData(el.filtroData.value) : "todas as datas";
+      const linhas = dados.map(a =>
+        `• ${a.nome}\n   Data: ${fmtData(a.data)} às ${a.hora}\n   Serviço: ${a.tipo} • Duração: ${a.duracao} • Valor: ${fmtValor(a.valor)}`
+      );
+      const corpo = linhas.join("\n\n");
+      const texto =
+        `Olá, tudo bem?\n\n` +
+        `Segue a confirmação da agenda de atendimentos do dia ${dataStr}:\n\n` +
+        `${corpo}\n\n` +
+        `Por gentileza, confirme se está tudo certo. No dia do atendimento, peço que evite atrasos para não impactar outros horários.\n\n` +
+        `Obrigada! 💅`;
+
+      if (navigator.share) {
+        try { await navigator.share({ title: "Agenda da Manicure", text: texto }); } catch (e) {}
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(texto);
+          mostrarToast("Agenda copiada. Cole no WhatsApp ou onde quiser.");
+        } catch (e) { alert(texto); }
+      } else {
+        alert(texto);
+      }
+    }
+
+    function ativarAba(nome) {
+      el.tabButtons.forEach(btn => {
+        const tab = btn.getAttribute("data-tab");
+        btn.classList.toggle("active", tab === nome);
+      });
+      document.querySelectorAll(".tab-content").forEach(sec => {
+        const id = sec.id.replace("tab-", "");
+        sec.classList.toggle("active", id === nome);
+      });
+    }
+
+    function configurarEventos() {
+      el.tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const tab = btn.getAttribute("data-tab");
+          ativarAba(tab);
+        });
+      });
+      el.tipo.addEventListener("change", () => {
+        const padrao = PADROES_SERVICO[el.tipo.value];
+        if (padrao) {
+          el.duracao.value = padrao.duracao;
+          el.valor.value = padrao.valor.toFixed(2);
+        }
+      });
+      el.salvarBtn.addEventListener("click", e => { e.preventDefault(); salvarAtendimento(); });
+      el.limparBtn.addEventListener("click", e => { e.preventDefault(); limparFormulario(); });
+      el.excluirBtn.addEventListener("click", e => { e.preventDefault(); excluirAtendimento(); });
+
+      el.filtroData.addEventListener("change", () => {
+        el.filtroDataAgenda.value = el.filtroData.value;
+        el.data.value = el.filtroData.value;
+        renderTabela();
+      });
+      el.filtroDataAgenda.addEventListener("change", () => {
+        el.filtroData.value = el.filtroDataAgenda.value;
+        el.data.value = el.filtroData.value;
+        renderTabela();
+      });
+      el.limparFiltroBtn.addEventListener("click", () => {
+        const hoje = hojeISO();
+        el.filtroData.value = hoje;
+        el.filtroDataAgenda.value = hoje;
+        el.data.value = hoje;
+        renderTabela();
+      });
+
+      el.exportarBtn.addEventListener("click", exportarCSV);
+      el.compartilharBtn.addEventListener("click", compartilharAgenda);
+
+      if (el.filtroMes) el.filtroMes.addEventListener("change", atualizarResumoMes);
+      if (el.tipoPeriodoMes) el.tipoPeriodoMes.addEventListener("change", atualizarResumoMes);
+    }
+
+    function initLockScreen() {
+      if (!el.lockBackdrop) return;
+      let stored = null;
+      try { stored = JSON.parse(localStorage.getItem(LOCK_KEY) || "null"); } catch (e) { stored = null; }
+      let hasPin = stored && typeof stored.pin === "string" && stored.pin.length >= 4;
+
+      if (hasPin) {
+        el.lockSubtitle.textContent = "Digite seu PIN para desbloquear a agenda.";
+        el.lockConfirmBtn.textContent = "Desbloquear";
+        el.lockResetBtn.style.display = "inline-flex";
+      } else {
+        el.lockSubtitle.textContent = "Defina um PIN numérico para proteger sua agenda.";
+        el.lockConfirmBtn.textContent = "Criar PIN e entrar";
+        el.lockResetBtn.style.display = "none";
+      }
+
+      el.lockBackdrop.classList.remove("hidden");
+      el.lockPin.value = "";
+
+      const handleConfirm = () => {
+        const pin = (el.lockPin.value || "").trim();
+        if (!pin || pin.length < 4) {
+          mostrarToast("PIN deve ter pelo menos 4 dígitos.", "error");
+          return;
+        }
+        if (!hasPin) {
+          try { localStorage.setItem(LOCK_KEY, JSON.stringify({ pin })); } catch (e) {}
+          el.lockBackdrop.classList.add("hidden");
+          el.lockPin.value = "";
+          mostrarToast("PIN criado e agenda desbloqueada.");
+          hasPin = true;
+        } else {
+          if (stored && pin === stored.pin) {
+            el.lockBackdrop.classList.add("hidden");
+            el.lockPin.value = "";
+            mostrarToast("Agenda desbloqueada.");
+          } else {
+            el.lockPin.value = "";
+            mostrarToast("PIN incorreto.", "error");
+          }
+        }
+      };
+
+      el.lockConfirmBtn.onclick = handleConfirm;
+      el.lockResetBtn.onclick = () => {
+        try { localStorage.removeItem(LOCK_KEY); } catch (e) {}
+        initLockScreen();
+      };
+      el.lockPin.onkeydown = (ev) => { if (ev.key === "Enter") handleConfirm(); };
+
+      setTimeout(() => { try { el.lockPin.focus(); } catch (e) {} }, 80);
+    }
+
+    function init() {
+      initLockScreen();
+      carregarLocal();
+
+      const hoje = hojeISO();
+      const existeSeedDia11 = atendimentos.some(a => a.data === "2025-12-11");
+      const dataInicial = existeSeedDia11 ? "2025-12-11" : hoje;
+
+      el.filtroData.value = dataInicial;
+      el.filtroDataAgenda.value = dataInicial;
+      el.data.value = dataInicial;
+      if (el.filtroMes) el.filtroMes.value = dataInicial.slice(0, 7);
+
+      configurarEventos();
+      atualizarProximoAtendimento();
+      renderTabela();
+      atualizarResumoMes();
+
+      setInterval(() => {
+        atualizarProximoAtendimento();
+        if (!editingId) {
+          carregarLocal();
+          renderTabela();
+          atualizarResumoMes();
+        }
+      }, 60000);
+    }
+
+    init();
   </script>
 </body>
 </html>
